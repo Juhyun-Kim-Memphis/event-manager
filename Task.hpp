@@ -26,6 +26,7 @@ private:
     Module &module;
 };
 
+void workerMain(ModifyTask &task);
 
 
 #endif //EVENT_MANAGER_TASK_HPP

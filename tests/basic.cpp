@@ -13,7 +13,7 @@ TEST(BasicTest, testModuleChangeItsVariable) {
     ModifyTask task(1, module);
 
     EXPECT_EQ(0, module.getSharedVar());
-    std::thread worker1(&ModifyTask::start, task);
+    std::thread worker1(workerMain, task); //TODO: workerMain shouldn't get any arguments.
     worker1.join();
     EXPECT_EQ(1, module.getSharedVar());
 }
@@ -29,7 +29,7 @@ TEST(BasicTest, testFailToAcquireLock) {
     std::thread worker1(&LockReleasingTask::acquireLock, taskHavingLock);
     worker1.join();
 
-    std::thread worker2(&ModifyTask::start, task);
+    std::thread worker2(workerMain, task);
     worker2.join();
     EXPECT_EQ(0, module.getSharedVar());
 }

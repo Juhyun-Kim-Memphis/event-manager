@@ -15,3 +15,7 @@ void ModifyTask::start() {
 
     return;
 }
+
+void workerMain(ModifyTask &task) {
+    task.start();
+}
