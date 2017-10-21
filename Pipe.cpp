@@ -4,4 +4,3 @@
 
 #include "Pipe.hpp"
 
-PipeContainer *globalPipes = nullptr;

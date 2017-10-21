@@ -1,55 +1,35 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
-#include "../Module.hpp"
-#include "../Lock.hpp"
-#include "../Pipe.hpp"
-#include <thread>
-#ifdef _WIN32
-    #include <mingw.thread.h>
-    #include <fcntl.h>
-#include <unistd.h>
-
-#define pipe(fds) _pipe(fds,4096, _O_BINARY)
-#endif
+#include "../Worker.hpp"
 
 TEST(BasicTest, testModuleChangeItsVariable) {
+    Pipe pipe;
     Module module(0);
-    // insert integer value 1 to Module.
-    ModifyTask task(1, module);
-    int pipeFd[2];
-
-    if (pipe(pipeFd) == -1) {
-        perror("pipe");
-    }
-    globalPipes = new PipeContainer(pipeFd[1], -1);
+    // set 1 to Module's shared variable.
+    ModifyTask task(pipe.getWritefd(), 1, module);
 
     EXPECT_EQ(0, module.getSharedVar());
-    std::thread worker1(workerMain, pipeFd[0], task); //TODO: workerMain shouldn't get any arguments except its read pipe.
-    worker1.join();
+    //TODO: workerMain shouldn't get any arguments except its read pipe.
+    std::thread worker(&Worker::mainLoop, Worker(pipe.getReadfd(), &task));
+
+    worker.join();
     EXPECT_EQ(1, module.getSharedVar());
 }
 
 TEST(BasicTest, testFailToAcquireLock) {
+    Pipe pipe[2];
+
     Module module(0);
-    // insert integer value 1 to Module.
-    ModifyTask modifyTask(1, module);
-    LockReleasingTask taskHavingLock(module);
-    int pipeFd1[2];
-    int pipeFd2[2];
-    if (pipe(pipeFd1) == -1) {
-        perror("pipe");
-    }
-    if (pipe(pipeFd2) == -1) {
-        perror("pipe");
-    }
-    globalPipes = new PipeContainer(pipeFd1[1], pipeFd2[1]);
+    ModifyTask modifyTask(pipe[0].getWritefd(), 1, module);
+    LockReleasingTask taskHavingLock(pipe[1].getWritefd(), module);
 
     EXPECT_EQ(0, module.getSharedVar());
 
     // sleep 1 second and release lock
-    std::thread worker2(workerMain, pipeFd2[0], taskHavingLock);
+    std::thread worker2(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &taskHavingLock));
     EXPECT_EQ(0, module.getSharedVar());
-    std::thread worker1(workerMain, pipeFd1[0], modifyTask);
+    std::thread worker1(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &modifyTask));
+    EXPECT_EQ(0, module.getSharedVar());
 
     worker1.join();
     worker2.join();

@@ -1,19 +1,28 @@
-//
-// Created by user on 2017-10-21.
-//
-
 #ifndef EVENT_MANAGER_PIPE_HPP
 #define EVENT_MANAGER_PIPE_HPP
+#ifdef _WIN32
+    #include <mingw.thread.h>
+    #include <fcntl.h>
+    #define pipe(fds) _pipe(fds,4096, _O_BINARY)
+#endif
+#include <unistd.h>
 
 
-class PipeContainer {
+class Pipe {
 public:
-    PipeContainer(int wp1, int wp2) : writePipe1(wp1), writePipe2(wp2) {}
-    int writePipe1;
-    int writePipe2;
+    Pipe() {
+        if(pipe(fd) == -1)
+            throw std::string("pipe creation fails.");
+    }
+    int getReadfd() {
+        return fd[0];
+    }
+    int getWritefd() {
+        return fd[1];
+    }
+
+private:
+    int fd[2];
 };
-
-extern PipeContainer *globalPipes;
-
 
 #endif //EVENT_MANAGER_PIPE_HPP

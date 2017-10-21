@@ -9,9 +9,12 @@
 
 class Lock {
 public:
+    Lock () : lockVal(UNLOCKED) {}
     bool acquire(int writePipeFdOfRequester) {
-        if(mtx.try_lock())
+        if(lockVal == UNLOCKED) {
+            lockVal = LOCKED;
             return true;
+        }
         else{
             waiters.push(writePipeFdOfRequester);
             return false;
@@ -19,15 +22,28 @@ public:
     }
 
     void release() {
-        char released = 'r';
-        mtx.unlock(); //TODO: acquire lock for waiter.
-        int waiterFd = waiters.front();
-        waiters.pop();
-        write(waiterFd, &released, 1);
+        if(lockVal == UNLOCKED)
+            throw std::string("releasing unlocked Lock!");
+
+        if(waiters.empty()){
+            lockVal = UNLOCKED;
+        } else {
+            //TODO: write lock's id to pipe.
+            char released = 'r';
+            int waiterFd = waiters.front();
+            waiters.pop();
+            lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
+            write(waiterFd, &released, 1);
+        }
     }
 
 private:
-    std::mutex mtx;
+    enum LockValue {
+        LOCKED,
+        UNLOCKED
+    };
+
+    LockValue lockVal;
     std::queue<int> waiters;
 };
 
