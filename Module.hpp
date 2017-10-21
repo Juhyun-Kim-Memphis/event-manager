@@ -10,9 +10,6 @@ public:
     }
 
     int getSharedVar() { return sharedVar; }
-    void setSharedVar(int newVal) {
-        sharedVar = newVal;
-    }
 
     Lock lock;
     int sharedVar;
