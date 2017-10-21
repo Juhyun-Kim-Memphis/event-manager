@@ -7,8 +7,10 @@ ModifyTask::ModifyTask(int nv, Module &m) : module(m) {
 void ModifyTask::start() {
 
     //acquire lock of module
-    module.lock.acquire();
-    module.sharedVar = newValueForModule;
+    if(module.lock.acquire())
+        module.sharedVar = newValueForModule;
+    else
+        return;
     module.lock.release();
 
     return;

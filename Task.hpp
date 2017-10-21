@@ -14,6 +14,18 @@ private:
     Module &module;
 };
 
+class LockReleasingTask {
+public:
+    LockReleasingTask(Module &m) : module(m) {} ;
+
+    void acquireLock() {
+        module.lock.acquire();
+    }
+
+private:
+    Module &module;
+};
+
 
 
 #endif //EVENT_MANAGER_TASK_HPP

@@ -18,6 +18,18 @@ TEST(BasicTest, testModuleChangeItsVariable) {
     EXPECT_EQ(1, module.getSharedVar());
 }
 
-TEST(BasicTest, testLock) {
+TEST(BasicTest, testFailToAcquireLock) {
+    Module module(0);
+    // insert integer value 1 to Module.
+    ModifyTask task(1, module);
+    LockReleasingTask taskHavingLock(module);
 
+    EXPECT_EQ(0, module.getSharedVar());
+
+    std::thread worker1(&LockReleasingTask::acquireLock, taskHavingLock);
+    worker1.join();
+
+    std::thread worker2(&ModifyTask::start, task);
+    worker2.join();
+    EXPECT_EQ(0, module.getSharedVar());
 }
