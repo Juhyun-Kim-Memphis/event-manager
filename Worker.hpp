@@ -26,6 +26,8 @@ private:
         while (read(readPipefd, &buf, 1) > 0) {
             return Event(buf[0]);
         }
+
+        throw new exception;
     }
 
     int readPipefd;

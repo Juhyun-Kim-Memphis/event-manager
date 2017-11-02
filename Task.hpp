@@ -11,12 +11,18 @@ using namespace std;
 
 class Task {
 public:
+    Task(int wfd) : writePipeFd(wfd) {}
     virtual void start() = 0;
     std::function<void(void)> eventHandle;
 //    void eventHandle(Event *ev){
 //
 //    }
     virtual void handle(Event event) {};
+
+protected:
+    void quit() const;
+
+    int writePipeFd;
 };
 
 class ModifyTask : public Task {
@@ -28,37 +34,31 @@ public:
     void handle(Event event) override;
 
 private:
-    int writePipeFd;
     int newValueForModule;
     Module &module;
+
 };
 
 class LockReleasingTask : public Task {
 public:
-    LockReleasingTask(int wfd, Module &m) : writePipeFd(wfd), module(m) {} ;
+    LockReleasingTask(int wfd, Module &m) : Task(wfd), module(m) {} ;
 
     void start() override {
         // TODO: make quit Event factory call
-        char quit = 'q';
-        acquireLock();
-        sleep(2);
+        module.lock.acquire(writePipeFd);
+        sleep(1);
         module.lock.release();
-        write(writePipeFd, &quit, 1);
+        quit();
     }
 
 private:
-    void acquireLock() {
-        module.lock.acquire(writePipeFd);
-    }
-
-    int writePipeFd;
     Module &module;
 };
 
 class LockAcquireTask : public Task {
 public:
     LockAcquireTask(int wfd, Lock *a, Lock *b)
-            : writePipeFd(wfd), lockA(a), lockB(b) {}
+            : Task(wfd), lockA(a), lockB(b) {}
 
     void start() override {
         char quit = 'q';
@@ -86,8 +86,9 @@ public:
         return acquiredLocks;
     }
 
+//    void handle(Event event) override;
+
 private:
-    int writePipeFd;
     Lock *lockA;
     Lock *lockB;
     vector<Lock *> acquiredLocks;

@@ -31,10 +31,11 @@ public:
             lockVal = UNLOCKED;
         } else {
             //TODO: write lock's id to pipe.
-            char released = 'r';
             int waiterFd = waiters.front();
             waiters.pop_front();
             lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
+
+            char released = 'r';
             write(waiterFd, &released, 1);
         }
     }
