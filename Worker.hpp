@@ -10,6 +10,7 @@ public:
     Worker(int rfd, Task *t) : readPipefd(rfd), currentTask(t) {}
 
     void mainLoop(){
+
         currentTask->start();
         Event event = waitAndGetEvent();
         while( !event.isQuit() ){

@@ -6,6 +6,7 @@
     #define pipe(fds) _pipe(fds,4096, _O_BINARY)
 #endif
 #include <unistd.h>
+#include <string>
 
 
 class Pipe {

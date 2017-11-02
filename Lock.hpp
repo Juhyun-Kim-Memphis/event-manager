@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <mutex>
+#include <algorithm>
 #ifdef _WIN32
 #include <mingw.mutex.h>
 #endif
@@ -10,13 +11,14 @@
 class Lock {
 public:
     Lock () : lockVal(UNLOCKED) {}
+    Lock (std::string name) : lockVal(UNLOCKED), lockName(name) {}
     bool acquire(int writePipeFdOfRequester) {
         if(lockVal == UNLOCKED) {
             lockVal = LOCKED;
             return true;
         }
         else{
-            waiters.push(writePipeFdOfRequester);
+            waiters.push_back(writePipeFdOfRequester);
             return false;
         }
     }
@@ -31,20 +33,31 @@ public:
             //TODO: write lock's id to pipe.
             char released = 'r';
             int waiterFd = waiters.front();
-            waiters.pop();
+            waiters.pop_front();
             lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
             write(waiterFd, &released, 1);
         }
     }
 
+    bool isInWaiters(int myWriteFd) {
+        return waiters.end() != std::find(waiters.begin(), waiters.end(), myWriteFd);
+    }
+
+    std::string getLockName(){
+        return lockName;
+    }
+
 private:
+    typedef int FdOfWaiter;
+
     enum LockValue {
         LOCKED,
         UNLOCKED
     };
 
     LockValue lockVal;
-    std::queue<int> waiters;
+    std::string lockName;
+    std::deque<FdOfWaiter> waiters;
 };
 
 #endif //EVENT_MANAGER_LOCK_HPP
