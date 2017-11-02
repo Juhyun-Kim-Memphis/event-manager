@@ -71,7 +71,7 @@ public:
         write(writePipeFd, &quit, 1);
     }
 
-    vector<Lock *> testWaitingLock(){
+    vector<Lock *> getAwaitedLocks(){
         int myself = writePipeFd;
         vector<Lock *> awaitedLocks;
 
@@ -82,7 +82,7 @@ public:
         return awaitedLocks;
     }
 
-    vector<Lock *> getLocks () {
+    vector<Lock *> getAcquiredLocks() {
         return acquiredLocks;
     }
 

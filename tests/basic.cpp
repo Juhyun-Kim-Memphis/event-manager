@@ -3,7 +3,7 @@
 #include "../Task.hpp"
 #include "../Worker.hpp"
 
-TEST(BasicTest, testModuleChangeItsVariable) {
+TEST(TaskAndEvent, testModuleChangeItsVariable) {
     Pipe pipe;
     Module module(0);
     // set 1 to Module's shared variable.
@@ -17,7 +17,7 @@ TEST(BasicTest, testModuleChangeItsVariable) {
     EXPECT_EQ(1, module.getSharedVar());
 }
 
-TEST(BasicTest, testFailToAcquireLock) {
+TEST(TaskAndEvent, testFailToAcquireLock) {
     Pipe pipe[2];
 
     Module module(0);
@@ -37,29 +37,18 @@ TEST(BasicTest, testFailToAcquireLock) {
     EXPECT_EQ(1, module.getSharedVar());
 }
 
-TEST(BasicTest, testMultiplexing) {
+TEST(TaskAndEvent, testWaitMultipleLocks) {
     Pipe pipe[2];
-    Lock lockA;
-    Lock lockB;
-
+    Lock lockA, lockB;
     LockAcquireTask acquireTask(pipe[0].getWritefd(), &lockA, &lockB);
     LockAcquireTask multiLockWaitTask(pipe[1].getWritefd(), &lockA, &lockB);
 
     std::thread lockOwner(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &acquireTask));
-
     lockOwner.join();
-
-    vector<Lock *> locksExpected;
-    locksExpected.push_back(&lockA);
-    locksExpected.push_back(&lockB);
-    EXPECT_EQ(locksExpected, acquireTask.getLocks());
+    EXPECT_EQ(vector<Lock *>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
     std::thread waiter(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &multiLockWaitTask));
     waiter.join();
-
-    vector<Lock *> waitLocksExpected;
-    waitLocksExpected.push_back(&lockA);
-    waitLocksExpected.push_back(&lockB);
-    EXPECT_EQ(waitLocksExpected, multiLockWaitTask.testWaitingLock());
+    EXPECT_EQ(vector<Lock *>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
 }
 
