@@ -8,6 +8,9 @@
 #include <mingw.mutex.h>
 #endif
 
+/**
+ * TODO: Move all of the actual implementations to cpp.
+ */
 class Lock {
 public:
     Lock () : lockVal(UNLOCKED) {}
