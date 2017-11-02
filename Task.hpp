@@ -57,57 +57,41 @@ private:
 
 class LockAcquireTask : public Task {
 public:
-    LockAcquireTask(int wfd, ModuleHavingTwoSharedVar &m)
-            : writePipeFd(wfd), module(m) {
-    }
+    LockAcquireTask(int wfd, Lock *a, Lock *b)
+            : writePipeFd(wfd), lockA(a), lockB(b) {}
 
     void start() override {
         char quit = 'q';
-        if(module.lockA.acquire(writePipeFd))
-            myLocks.push_back(&module.lockA);
+        if(lockA->acquire(writePipeFd))
+            acquiredLocks.push_back(lockA);
 
-        if(module.lockB.acquire(writePipeFd))
-            myLocks.push_back(&module.lockB);
+        if(lockB->acquire(writePipeFd))
+            acquiredLocks.push_back(lockB);
 
-        write(writePipeFd, &quit, 1);
-    }
-
-    vector<Lock *> getLocks () {
-        return myLocks;
-    }
-
-private:
-    int writePipeFd;
-    ModuleHavingTwoSharedVar &module;
-    vector<Lock *> myLocks;
-};
-
-class MultiLockWaitTask : public Task {
-public:
-    MultiLockWaitTask(int wfd, ModuleHavingTwoSharedVar &m)
-            : writePipeFd(wfd), module(m), waitingLocks()  {}
-
-    void start() override {
-        char quit = 'q';
-        module.lockA.acquire(writePipeFd);
-        module.lockB.acquire(writePipeFd);
         write(writePipeFd, &quit, 1);
     }
 
     vector<Lock *> testWaitingLock(){
-        if(module.lockA.isInWaiters(writePipeFd))
-            waitingLocks.push_back(&module.lockA);
-        if(module.lockB.isInWaiters(writePipeFd))
-            waitingLocks.push_back(&module.lockB);
-        return waitingLocks;
+        int myself = writePipeFd;
+        vector<Lock *> awaitedLocks;
+
+        if(lockA->isInWaiters(myself))
+            awaitedLocks.push_back(lockA);
+        if(lockB->isInWaiters(myself))
+            awaitedLocks.push_back(lockB);
+        return awaitedLocks;
+    }
+
+    vector<Lock *> getLocks () {
+        return acquiredLocks;
     }
 
 private:
     int writePipeFd;
-    ModuleHavingTwoSharedVar &module;
-    vector<Lock *> waitingLocks;
+    Lock *lockA;
+    Lock *lockB;
+    vector<Lock *> acquiredLocks;
 };
-
 
 
 #endif //EVENT_MANAGER_TASK_HPP

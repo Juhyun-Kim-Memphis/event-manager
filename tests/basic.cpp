@@ -40,42 +40,26 @@
 
 TEST(BasicTest, testMultiplexing) {
     Pipe pipe[2];
+    Lock lockA;
+    Lock lockB;
 
-    ModuleHavingTwoSharedVar module(0, 0);
-    LockAcquireTask incrementTask(pipe[0].getWritefd(), module);
-    MultiLockWaitTask multiLockWaitTask(pipe[1].getWritefd(), module);
+    LockAcquireTask acquireTask(pipe[0].getWritefd(), &lockA, &lockB);
+    LockAcquireTask multiLockWaitTask(pipe[1].getWritefd(), &lockA, &lockB);
 
-    std::thread lockOwner(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &incrementTask));
+    std::thread lockOwner(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &acquireTask));
 
     lockOwner.join();
 
     vector<Lock *> locksExpected;
-    locksExpected.push_back(&module.lockA);
-    locksExpected.push_back(&module.lockB);
-    EXPECT_EQ(locksExpected, incrementTask.getLocks());
+    locksExpected.push_back(&lockA);
+    locksExpected.push_back(&lockB);
+    EXPECT_EQ(locksExpected, acquireTask.getLocks());
 
     std::thread waiter(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &multiLockWaitTask));
     waiter.join();
 
     vector<Lock *> waitLocksExpected;
-    waitLocksExpected.push_back(&module.lockA);
-    waitLocksExpected.push_back(&module.lockB);
+    waitLocksExpected.push_back(&lockA);
+    waitLocksExpected.push_back(&lockB);
     EXPECT_EQ(waitLocksExpected, multiLockWaitTask.testWaitingLock());
 }
-
-//TEST(BasicTest, testMultiplexingAndRelease) {
-//    Pipe pipe[2];
-//
-//    ModuleHavingTwoSharedVar module(0, 0);
-//    LockAcquireTask incrementTask(pipe[0].getWritefd(), module);
-//    MultiLockWaitTask multiLockWaitTask(pipe[1].getWritefd(), module);
-//
-//    std::thread lockOwner(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &incrementTask));
-//
-//    std::thread waiter(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &multiLockWaitTask));
-//
-//    waiter.join();
-//    lockOwner.join();
-//
-//    EXPECT_EQ(string("waiting: lock Alock B"), multiLockWaitTask.testWaitingLock());
-//}
