@@ -24,11 +24,13 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     ModifyTask modifyTask(pipe[0].getWritefd(), 1, module);
     LockReleasingTask taskHavingLock(pipe[1].getWritefd(), module);
 
+    cout << "Task1:"<<pipe[0].getWritefd() << ", Task2:"<<pipe[1].getWritefd() <<"\n";
     EXPECT_EQ(0, module.getSharedVar());
 
     // sleep 1 second and release lock
     std::thread worker2(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &taskHavingLock));
     EXPECT_EQ(0, module.getSharedVar());
+    usleep(300);
     std::thread worker1(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &modifyTask));
 
     worker1.join();

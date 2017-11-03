@@ -21,8 +21,8 @@ public:
     Lock(std::string name) : lockVal(UNLOCKED), lockName(name) {}
 
     bool acquire(int writePipeFdOfRequester) {
-        if (lockVal == UNLOCKED) {
-            lockVal = LOCKED;
+        if (aop_cas(&lockVal, 1, 0) == 0) {
+            owner = writePipeFdOfRequester;
             return true;
         } else {
             waiters.push_back(writePipeFdOfRequester);
@@ -31,8 +31,9 @@ public:
     }
 
     void release() {
-        if (lockVal == UNLOCKED)
-            throw std::string("releasing unlocked Lock!");
+        if (lockVal == UNLOCKED) {
+            std::cout << "releasing unlocked lock. owner:"<< owner <<"\n";
+        }
 
         if (waiters.empty()) {
             lockVal = UNLOCKED;
@@ -56,16 +57,30 @@ public:
     }
 
 private:
+    static inline long
+    aop_cas(volatile long *vp, long nv, long ov) {
+        asm __volatile__(
+        "lock ; " "cmpxchgq %1,(%3)"
+        : "=a" (nv)
+        : "r" (nv), "a" (ov), "r" (vp)
+        : "cc", "memory"
+        );
+
+        return nv;
+    }
+
     typedef int FdOfWaiter;
 
     enum LockValue {
-        LOCKED,
-        UNLOCKED
+        LOCKED = 1,
+        UNLOCKED = 0
     };
 
-    LockValue lockVal;
+    volatile long lockVal;
+
     std::string lockName;
     std::deque<FdOfWaiter> waiters;
+    int owner;
 };
 
 #endif //EVENT_MANAGER_LOCK_HPP
