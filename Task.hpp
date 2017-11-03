@@ -14,13 +14,9 @@ public:
     Task(int wfd) : writePipeFd(wfd) {}
 
     virtual void start() = 0;
-
     std::function<void(void)> eventHandle;
-
-//    void eventHandle(Event *ev){
-//
-//    }
     virtual void handle(Event event) {};
+    int getWritePipeFd(){ return writePipeFd; }
 
 protected:
     void quit() const;
@@ -51,7 +47,6 @@ public:
     void start() override {
         // TODO: make quit Event factory call
         module.lock.acquire(writePipeFd);
-        sleep(1);
         module.lock.release();
         quit();
     }

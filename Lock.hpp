@@ -17,19 +17,31 @@ public:
     Lock(int id_) : id(id_), owner(-1), lockVal(UNLOCKED) {}
 
     virtual bool acquire(int writePipeFdOfRequester) {
+        bool acquired = false;
+        mtx.lock();
+
         if (lockVal == UNLOCKED) {
             lockVal = LOCKED;
             owner = writePipeFdOfRequester;
-            return true;
-        } else {
-            waiters.push_back(writePipeFdOfRequester);
-            return false;
+            acquired = true;
         }
+        else{
+            waiters.push_back(writePipeFdOfRequester);
+            acquired = false;
+        }
+
+
+        mtx.unlock();
+        return acquired;
     }
 
     virtual void release() {
-        if (lockVal == UNLOCKED)
+        mtx.lock();
+
+        if (lockVal == UNLOCKED){
+            mtx.unlock();
             throw exception();
+        }
 
         if (waiters.empty()) {
             lockVal = UNLOCKED;
@@ -42,6 +54,7 @@ public:
             char released = 'r';
             write(waiterFd, &released, 1);
         }
+        mtx.unlock();
     }
 
     bool isInWaiters(int myWriteFd) {
@@ -62,6 +75,8 @@ protected:
     typedef int PipeFd;
     PipeFd owner;
     std::deque<PipeFd> waiters;
+
+    std::mutex mtx; //for testing
 };
 
 class LockUsingAOP : public Lock {

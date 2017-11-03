@@ -7,7 +7,7 @@ include_directories($ENV{gtest_SOURCE_DIR}/include $ENV{gtest_SOURCE_DIR})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Module.hpp Lock.hpp Pipe.cpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp)
+set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Module.hpp Lock.hpp Pipe.cpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp tests/TestUtilities.hpp)
 
 link_directories($ENV{gtest_SOURCE_DIR})
 

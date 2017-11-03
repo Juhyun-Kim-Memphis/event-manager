@@ -2,6 +2,7 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 #include "../Worker.hpp"
+#include "TestUtilities.hpp"
 
 TEST(TaskAndEvent, testModuleChangeItsVariable) {
     Pipe pipe;
@@ -30,8 +31,8 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     // sleep 1 second and release lock
     std::thread worker2(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &taskHavingLock));
     EXPECT_EQ(0, module.getSharedVar());
-    usleep(300);
     std::thread worker1(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &modifyTask));
+    TestUtil::sendTriggeringEvent(&modifyTask);
 
     worker1.join();
     worker2.join();
