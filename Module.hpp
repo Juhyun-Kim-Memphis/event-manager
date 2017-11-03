@@ -17,9 +17,8 @@ public:
 
 class ModuleHavingTwoSharedVar {
 public:
-    ModuleHavingTwoSharedVar (int varA, int varB)
-        : lockA("lock A"), lockB("lock B")
-    {
+    ModuleHavingTwoSharedVar(int varA, int varB)
+            : lockA("lock A"), lockB("lock B") {
         sharedVarA = varA;
         sharedVarB = varB;
     }

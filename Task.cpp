@@ -12,12 +12,11 @@ ModifyTask::ModifyTask(int wfd, int nv, Module &m) : Task(wfd), module(m) {
 
 void ModifyTask::start() {
     //acquire lock of module
-    if(module.lock.acquire(writePipeFd)){
+    if (module.lock.acquire(writePipeFd)) {
         modifySharedVarModule();
         quit();
-    }
-    else {
-        std::cout<<"Fail to acquire Lock\n";
+    } else {
+        std::cout << "Fail to acquire Lock\n";
         eventHandle = std::bind(&ModifyTask::modifySharedVarModule, this);
     }
 }
@@ -28,7 +27,7 @@ void ModifyTask::modifySharedVarModule() {
 }
 
 void ModifyTask::handle(Event event) {
-    if(event.id == 'r') {
+    if (event.id == 'r') {
         modifySharedVarModule();
         quit();
     }

@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 #include <algorithm>
+
 #ifdef _WIN32
 #include <mingw.mutex.h>
 #endif
@@ -13,24 +14,27 @@
  */
 class Lock {
 public:
-    Lock () : lockVal(UNLOCKED) {}
-    Lock (std::string name) : lockVal(UNLOCKED), lockName(name) {}
+    //Default constructor setting locval as unlocked
+    Lock() : lockVal(UNLOCKED) {}
+
+
+    Lock(std::string name) : lockVal(UNLOCKED), lockName(name) {}
+
     bool acquire(int writePipeFdOfRequester) {
-        if(lockVal == UNLOCKED) {
+        if (lockVal == UNLOCKED) {
             lockVal = LOCKED;
             return true;
-        }
-        else{
+        } else {
             waiters.push_back(writePipeFdOfRequester);
             return false;
         }
     }
 
     void release() {
-        if(lockVal == UNLOCKED)
+        if (lockVal == UNLOCKED)
             throw std::string("releasing unlocked Lock!");
 
-        if(waiters.empty()){
+        if (waiters.empty()) {
             lockVal = UNLOCKED;
         } else {
             //TODO: write lock's id to pipe.
@@ -47,7 +51,7 @@ public:
         return waiters.end() != std::find(waiters.begin(), waiters.end(), myWriteFd);
     }
 
-    std::string getLockName(){
+    std::string getLockName() {
         return lockName;
     }
 

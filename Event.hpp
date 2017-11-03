@@ -6,6 +6,7 @@
  * TODO: Expand on derived Events
  * TODO: Expand on the usability of the EventID
  * Question: Can Events be singleton??????????? Doesn't seem likely
+ * If not- need to consider the cost of creating & destroying Event objects
  */
 class Event {
 public:
@@ -15,6 +16,8 @@ public:
     Event() {}
 
     Event(EventID id_) : id(id_) {}
+
+    EventID getEventID() { return this->id; }
 
     //To be removed- used only in the preliminary testing phase
     bool isQuit() { return id == 'q'; }

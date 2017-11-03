@@ -12,8 +12,11 @@ using namespace std;
 class Task {
 public:
     Task(int wfd) : writePipeFd(wfd) {}
+
     virtual void start() = 0;
+
     std::function<void(void)> eventHandle;
+
 //    void eventHandle(Event *ev){
 //
 //    }
@@ -30,7 +33,9 @@ public:
     ModifyTask(int wfd, int nv, Module &m);
 
     void start() override;
+
     void modifySharedVarModule();
+
     void handle(Event event) override;
 
 private:
@@ -41,7 +46,7 @@ private:
 
 class LockReleasingTask : public Task {
 public:
-    LockReleasingTask(int wfd, Module &m) : Task(wfd), module(m) {} ;
+    LockReleasingTask(int wfd, Module &m) : Task(wfd), module(m) {};
 
     void start() override {
         // TODO: make quit Event factory call
@@ -62,22 +67,22 @@ public:
 
     void start() override {
         char quit = 'q';
-        if(lockA->acquire(writePipeFd))
+        if (lockA->acquire(writePipeFd))
             acquiredLocks.push_back(lockA);
 
-        if(lockB->acquire(writePipeFd))
+        if (lockB->acquire(writePipeFd))
             acquiredLocks.push_back(lockB);
 
         write(writePipeFd, &quit, 1);
     }
 
-    vector<Lock *> getAwaitedLocks(){
+    vector<Lock *> getAwaitedLocks() {
         int myself = writePipeFd;
         vector<Lock *> awaitedLocks;
 
-        if(lockA->isInWaiters(myself))
+        if (lockA->isInWaiters(myself))
             awaitedLocks.push_back(lockA);
-        if(lockB->isInWaiters(myself))
+        if (lockB->isInWaiters(myself))
             awaitedLocks.push_back(lockB);
         return awaitedLocks;
     }
