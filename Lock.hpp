@@ -8,20 +8,17 @@
 #ifdef _WIN32
 #include <mingw.mutex.h>
 #endif
-
 /**
  * TODO: Move all of the actual implementations to cpp.
  */
+using namespace std;
 class Lock {
 public:
-    //Default constructor setting locval as unlocked
-    Lock() : lockVal(UNLOCKED) {}
+    Lock(int id_) : id(id_), owner(-1), lockVal(UNLOCKED) {}
 
-
-    Lock(std::string name) : lockVal(UNLOCKED), lockName(name) {}
-
-    bool acquire(int writePipeFdOfRequester) {
-        if (aop_cas(&lockVal, 1, 0) == 0) {
+    virtual bool acquire(int writePipeFdOfRequester) {
+        if (lockVal == UNLOCKED) {
+            lockVal = LOCKED;
             owner = writePipeFdOfRequester;
             return true;
         } else {
@@ -30,10 +27,9 @@ public:
         }
     }
 
-    void release() {
-        if (lockVal == UNLOCKED) {
-            std::cout << "releasing unlocked lock. owner:"<< owner <<"\n";
-        }
+    virtual void release() {
+        if (lockVal == UNLOCKED)
+            throw exception();
 
         if (waiters.empty()) {
             lockVal = UNLOCKED;
@@ -49,38 +45,38 @@ public:
     }
 
     bool isInWaiters(int myWriteFd) {
-        return waiters.end() != std::find(waiters.begin(), waiters.end(), myWriteFd);
+        return waiters.end() != find(waiters.begin(), waiters.end(), myWriteFd);
     }
 
-    std::string getLockName() {
-        return lockName;
+    int getID() {
+        return id;
     }
 
-private:
-    static inline long
-    aop_cas(volatile long *vp, long nv, long ov) {
-        asm __volatile__(
-        "lock ; " "cmpxchgq %1,(%3)"
-        : "=a" (nv)
-        : "r" (nv), "a" (ov), "r" (vp)
-        : "cc", "memory"
-        );
-
-        return nv;
-    }
-
-    typedef int FdOfWaiter;
-
+protected:
     enum LockValue {
         LOCKED = 1,
         UNLOCKED = 0
     };
+    LockValue lockVal;
+    int id;
+    typedef int PipeFd;
+    PipeFd owner;
+    std::deque<PipeFd> waiters;
+};
+
+class LockUsingAOP : public Lock {
+public:
+    explicit LockUsingAOP(int id) : lockVal(0), Lock(id) {}
+
+    bool acquire(int writePipeFdOfRequester) override;
+
+    void release() override;
+
+private:
+    inline long aop_cas(volatile long *vp, long nv, long ov);
 
     volatile long lockVal;
 
-    std::string lockName;
-    std::deque<FdOfWaiter> waiters;
-    int owner;
 };
 
 #endif //EVENT_MANAGER_LOCK_HPP

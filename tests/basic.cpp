@@ -12,8 +12,8 @@ TEST(TaskAndEvent, testModuleChangeItsVariable) {
     EXPECT_EQ(0, module.getSharedVar());
     //TODO: workerMain shouldn't get any arguments except its read pipe.
     std::thread worker(&Worker::mainLoop, Worker(pipe.getReadfd(), &task));
-
     worker.join();
+
     EXPECT_EQ(1, module.getSharedVar());
 }
 
@@ -41,7 +41,7 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
 
 TEST(TaskAndEvent, testWaitMultipleLocks) {
     Pipe pipe[2];
-    Lock lockA, lockB;
+    Lock lockA(1), lockB(2);
     LockAcquireTask acquireTask(pipe[0].getWritefd(), &lockA, &lockB);
     LockAcquireTask multiLockWaitTask(pipe[1].getWritefd(), &lockA, &lockB);
 
