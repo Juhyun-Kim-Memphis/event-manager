@@ -5,14 +5,15 @@
 
 class Module {
 public:
-    Module(int initialSharedVar) : lock(1) {
-        sharedVar = initialSharedVar;
+    Module() : lock(1) {
+        changed = false;
     }
 
-    int getSharedVar() { return sharedVar; }
+    int hasChanged() { return changed; }
+    void changeIt() { changed = true; }
 
     Lock lock;
-    int sharedVar;
+    bool changed;
 };
 
 #endif //EVENT_MANAGER_MODULE_HPP

@@ -6,40 +6,34 @@
 #include "../Worker.hpp"
 #include "TestUtilities.hpp"
 
-TEST(TaskAndEvent, testModuleChangeItsVariable) {
+TEST(TaskAndEvent, testSuccessToAcquireLock) {
     Pipe pipe;
-    Module module(0);
-    // set 1 to Module's shared variable.
-    ModifyTask task(pipe.getWritefd(), 1, module);
+    Module module;
+    // Task will change Module.
+    ModifyTask task(pipe.getWritefd(), module);
 
-    EXPECT_EQ(0, module.getSharedVar());
     //TODO: workerMain shouldn't get any arguments except its read pipe.
     std::thread worker(&Worker::mainLoop, Worker(pipe.getReadfd(), &task));
     worker.join();
-
-    EXPECT_EQ(1, module.getSharedVar());
+    EXPECT_EQ(true, module.hasChanged());
+    EXPECT_EQ(0, task.getNumOfEventHandlerCalls());
+    EXPECT_EQ(false, module.lock.isInWaiters(task.getWritePipeFd()));
 }
 
 TEST(TaskAndEvent, testFailToAcquireLock) {
-    Pipe pipe[2];
+    Pipe pipe;
+    Module module;
+    ModifyTask task(pipe.getWritefd(), module);
 
-    Module module(0);
-    ModifyTask modifyTask(pipe[0].getWritefd(), 1, module);
-    LockReleasingTask taskHavingLock(pipe[1].getWritefd(), module);
-
-    //cout << "Task1:"<<pipe[0].getWritefd() << ", Task2:"<<pipe[1].getWritefd() <<"\n";
-    EXPECT_EQ(0, module.getSharedVar());
-
-    // sleep 1 second and release lock
-    std::thread worker2(&Worker::mainLoop, Worker(pipe[1].getReadfd(), &taskHavingLock));
-    EXPECT_EQ(0, module.getSharedVar());
-    std::thread worker1(&Worker::mainLoop, Worker(pipe[0].getReadfd(), &modifyTask));
-    TestUtil::sendTriggeringEvent(&modifyTask);
-
+    /* 0 is dummy parameter for acquire */
+    EXPECT_EQ(true, module.lock.acquire(0)); /* lock in advance */
+    std::thread worker1(&Worker::mainLoop, Worker(pipe.getReadfd(), &task));
+    task.quit(); /* force to quit the task */
     worker1.join();
-    worker2.join();
 
-    EXPECT_EQ(1, module.getSharedVar());
+    EXPECT_EQ(false, module.hasChanged());
+    EXPECT_EQ(0, task.getNumOfEventHandlerCalls());
+    EXPECT_EQ(true, module.lock.isInWaiters(task.getWritePipeFd()));
 }
 
 TEST(TaskAndEvent, testWaitMultipleLocks) {

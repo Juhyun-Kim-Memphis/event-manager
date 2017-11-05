@@ -30,14 +30,12 @@ public:
             acquired = false;
         }
 
-
         mtx.unlock();
         return acquired;
     }
 
     virtual void release() {
         mtx.lock();
-
         if (lockVal == UNLOCKED){
             mtx.unlock();
             throw exception();
@@ -65,6 +63,13 @@ public:
         return id;
     }
 
+    bool testHasLocked() {
+        mtx.lock();
+        bool hasLocked = (lockVal == LOCKED);
+        mtx.unlock();
+        return hasLocked;
+    }
+
 protected:
     enum LockValue {
         LOCKED = 1,
@@ -84,7 +89,6 @@ public:
     explicit LockUsingAOP(int id) : lockVal(0), Lock(id) {}
 
     bool acquire(int writePipeFdOfRequester) override;
-
     void release() override;
 
 private:

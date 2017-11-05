@@ -2,7 +2,6 @@
 #define EVENT_MANAGER_TASK_HPP
 
 #include <unistd.h>
-//#include <string>
 #include "Module.hpp"
 #include "Pipe.hpp"
 #include "Event.hpp"
@@ -14,44 +13,27 @@ public:
     Task(int wfd) : writePipeFd(wfd) {}
 
     virtual void start() = 0;
-    std::function<void(void)> eventHandle;
     virtual void handle(Event event) {};
     int getWritePipeFd(){ return writePipeFd; }
-
-protected:
     void quit() const;
 
+protected:
     int writePipeFd;
 };
 
 class ModifyTask : public Task {
 public:
-    ModifyTask(int wfd, int nv, Module &m);
+    ModifyTask(int wfd, Module &m)
+            : Task(wfd), module(m), numOfEventHandlerCalls(0) {}
 
     void start() override;
-
-    void modifySharedVarModule();
-
     void handle(Event event) override;
+    int getNumOfEventHandlerCalls() { return numOfEventHandlerCalls; }
 
 private:
-    int newValueForModule;
-    Module &module;
+    void changeModule();
 
-};
-
-class LockReleasingTask : public Task {
-public:
-    LockReleasingTask(int wfd, Module &m) : Task(wfd), module(m) {};
-
-    void start() override {
-        // TODO: make quit Event factory call
-        module.lock.acquire(writePipeFd);
-        module.lock.release();
-        quit();
-    }
-
-private:
+    int numOfEventHandlerCalls;
     Module &module;
 };
 
@@ -85,8 +67,6 @@ public:
     vector<Lock *> getAcquiredLocks() {
         return acquiredLocks;
     }
-
-//    void handle(Event event) override;
 
 private:
     Lock *lockA;
