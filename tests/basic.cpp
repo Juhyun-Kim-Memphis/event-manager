@@ -92,6 +92,7 @@ public:
 };
 
 TEST(TaskAndEvent, testEventSerialization) {
+    Pipe pipe;
     EventForTest event('t');
     event.description.assign("Some kind of descriptions.");
     event.string.assign("Another String data here\n after new line.");
@@ -100,17 +101,12 @@ TEST(TaskAndEvent, testEventSerialization) {
     event.intData = 221;
     event.boolData = false;
 
-    ofstream ofs("test.ros", ios::binary);
-    ofs.write((char *)&event, sizeof(event));
-    ofs.close();
+    write(pipe.getWritefd(), &event, sizeof(event));
 
     EventForTest deserializedEvent;
-    ifstream ifs("test.ros", ios::binary);
-    ifs.read((char *)&deserializedEvent, sizeof(deserializedEvent));
-    ifs.close();
+    read(pipe.getReadfd(), &deserializedEvent, sizeof(deserializedEvent));
 
-    std::cout<< deserializedEvent << "\n";
+    //std::cout<< deserializedEvent << "\n";
 
     EXPECT_EQ(event, deserializedEvent);
-    EXPECT_EQ(1, 1);
 }
