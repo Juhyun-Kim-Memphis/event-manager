@@ -18,12 +18,13 @@ void LockUsingAOP::release() {
 }
 
 long LockUsingAOP::aop_cas(volatile long *vp, long nv, long ov) {
+#ifndef _WIN32
     asm __volatile__(
     "lock ; " "cmpxchgq %1,(%3)"
     : "=a" (nv)
     : "r" (nv), "a" (ov), "r" (vp)
     : "cc", "memory"
     );
-
+#endif
     return nv;
 }

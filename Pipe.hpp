@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include <string>
+#include <iostream>
 
 
 class Pipe {

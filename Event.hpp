@@ -24,6 +24,14 @@ public:
 
     //EventType seems to be a more appropriate name
     EventID id;
+
+    bool operator==(const Event &rhs) const {
+        return id == rhs.id;
+    }
+
+    bool operator!=(const Event &rhs) const {
+        return !(rhs == *this);
+    }
 };
 
 
