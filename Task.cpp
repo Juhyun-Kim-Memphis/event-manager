@@ -1,9 +1,13 @@
 #include <iostream>
 #include "Task.hpp"
+#define TERMINATED 0
 
-void Task::quit() const {
-    char quit = 'q';
-    write(writePipeFd, &quit, 1);
+void Task::quit() {
+    state = TERMINATED;
+}
+
+bool Task::hasQuit() {
+    return state == TERMINATED;
 }
 
 void ModifyTask::start() {
@@ -20,7 +24,7 @@ void ModifyTask::changeModule() {
 
 void ModifyTask::handle(Event event) {
     numOfEventHandlerCalls++;
-    if (event.id == 'r') {
+    if (event.isRelease()) {
         changeModule();
         quit();
     }

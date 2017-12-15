@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 #include <algorithm>
+#include "Event.hpp"
 
 #ifdef _WIN32
 #include <mingw.mutex.h>
@@ -12,55 +13,31 @@
  * TODO: Move all of the actual implementations to cpp.
  */
 using namespace std;
+
+
+
+class LockUser {
+public:
+    LockUser(int writePipefd) : writePipefd(writePipefd) {}
+
+    void sendEvent(LockUser to, Event input){
+        char released = input.getEventID();
+        write(to.writePipefd, &released, 1);
+    }
+private:
+    int writePipefd;
+};
+
 class Lock {
 public:
     Lock(int id_) : id(id_), owner(-1), lockVal(UNLOCKED) {}
 
-    virtual bool acquire(int writePipeFdOfRequester) {
-        bool acquired = false;
-        mtx.lock();
+    virtual bool acquire(int writePipeFdOfRequester);
 
-        if (lockVal == UNLOCKED) {
-            lockVal = LOCKED;
-            owner = writePipeFdOfRequester;
-            acquired = true;
-        }
-        else{
-            waiters.push_back(writePipeFdOfRequester);
-            acquired = false;
-        }
-
-        mtx.unlock();
-        return acquired;
-    }
-
-    virtual void release() {
-        mtx.lock();
-        if (lockVal == UNLOCKED){
-            mtx.unlock();
-            throw exception();
-        }
-
-        if (waiters.empty()) {
-            lockVal = UNLOCKED;
-        } else {
-            //TODO: write lock's id to pipe.
-            int waiterFd = waiters.front();
-            waiters.pop_front();
-            lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
-
-            char released = 'r';
-            write(waiterFd, &released, 1);
-        }
-        mtx.unlock();
-    }
+    virtual void release();
 
     bool isInWaiters(int myWriteFd) {
         return waiters.end() != find(waiters.begin(), waiters.end(), myWriteFd);
-    }
-
-    int getID() {
-        return id;
     }
 
     bool testHasLocked() {
@@ -71,15 +48,18 @@ public:
     }
 
 protected:
+//    typedef int LockUser;
+
+    void giveLockOwnership(LockUser waiter);
+
     enum LockValue {
         LOCKED = 1,
         UNLOCKED = 0
     };
     LockValue lockVal;
     int id;
-    typedef int PipeFd;
-    PipeFd owner;
-    std::deque<PipeFd> waiters;
+    int owner;
+    std::deque<int> waiters;
 
     std::mutex mtx; //for testing
 };

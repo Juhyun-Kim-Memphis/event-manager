@@ -8,6 +8,8 @@
 
 using namespace std;
 
+class TaskQuitEvent;
+
 class Task {
 public:
     Task(int wfd) : writePipeFd(wfd) {}
@@ -15,10 +17,13 @@ public:
     virtual void start() = 0;
     virtual void handle(Event event) {};
     int getWritePipeFd(){ return writePipeFd; }
-    void quit() const;
+    void quit(); // TODO: make it protected
+
+    bool hasQuit();
 
 protected:
-    int writePipeFd;
+    int writePipeFd; //TODO: change to LockUser
+    int state; //TODO: make TaskState class
 };
 
 class ModifyTask : public Task {
@@ -43,14 +48,13 @@ public:
             : Task(wfd), lockA(a), lockB(b) {}
 
     void start() override {
-        char quit = 'q';
         if (lockA->acquire(writePipeFd))
             acquiredLocks.push_back(lockA);
 
         if (lockB->acquire(writePipeFd))
             acquiredLocks.push_back(lockB);
 
-        write(writePipeFd, &quit, 1);
+        quit();
     }
 
     vector<Lock *> getAwaitedLocks() {
@@ -73,6 +77,9 @@ private:
     Lock *lockB;
     vector<Lock *> acquiredLocks;
 };
+
+
+
 
 
 #endif //EVENT_MANAGER_TASK_HPP
