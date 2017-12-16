@@ -44,38 +44,36 @@ private:
 
 class LockAcquireTask : public Task {
 public:
-    LockAcquireTask(int wfd, Lock *a, Lock *b)
-            : Task(wfd), lockA(a), lockB(b) {}
+    LockAcquireTask(int wfd, vector<Lock*> requiredLocks)
+            : Task(wfd), requiredLocks(std::move(requiredLocks)) {}
 
     void start() override {
-        if (lockA->acquire(writePipeFd))
-            acquiredLocks.push_back(lockA);
-
-        if (lockB->acquire(writePipeFd))
-            acquiredLocks.push_back(lockB);
-
+        for(Lock *lock : requiredLocks){
+            if(lock->acquire(writePipeFd))
+                acquiredLocks.push_back(lock);
+        }
         quit();
     }
 
-    vector<Lock *> getAwaitedLocks() {
+    vector<Lock*> getAwaitedLocks() {
         int myself = writePipeFd;
-        vector<Lock *> awaitedLocks;
+        vector<Lock*> awaitedLocks;
 
-        if (lockA->isInWaiters(myself))
-            awaitedLocks.push_back(lockA);
-        if (lockB->isInWaiters(myself))
-            awaitedLocks.push_back(lockB);
+        for(Lock *lock : requiredLocks){
+            if(lock->isInWaiters(myself))
+                awaitedLocks.push_back(lock);
+        }
+
         return awaitedLocks;
     }
 
-    vector<Lock *> getAcquiredLocks() {
+    vector<Lock*> getAcquiredLocks() {
         return acquiredLocks;
     }
 
 private:
-    Lock *lockA;
-    Lock *lockB;
-    vector<Lock *> acquiredLocks;
+    const vector<Lock*> requiredLocks;
+    vector<Lock*> acquiredLocks;
 };
 
 

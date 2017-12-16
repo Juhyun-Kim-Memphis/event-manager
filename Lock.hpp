@@ -36,11 +36,13 @@ public:
 
     virtual void release();
 
+    int getOwner() { return owner; }
+
     bool isInWaiters(int myWriteFd) {
         return waiters.end() != find(waiters.begin(), waiters.end(), myWriteFd);
     }
 
-    bool testHasLocked() {
+    bool hasLocked() {
         mtx.lock();
         bool hasLocked = (lockVal == LOCKED);
         mtx.unlock();

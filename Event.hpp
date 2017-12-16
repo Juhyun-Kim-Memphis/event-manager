@@ -17,7 +17,7 @@ public:
 
     Event(EventType t) : type(t) {}
 
-    EventType getEventID() { return this->type; }
+    EventType getEventID() const { return this->type; }
 
     bool isRelease() { return type == 'r'; }
 
@@ -29,7 +29,7 @@ public:
         return !(rhs == *this);
     }
 
-private:
+public: //TODO: make it private and apply intrusive serialize method.
     EventType type;
 };
 

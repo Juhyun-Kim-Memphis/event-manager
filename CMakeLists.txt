@@ -8,7 +8,7 @@ include_directories($ENV{BOOST_HOME})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Module.hpp Lock.hpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp tests/TestUtilities.hpp tests/event.cpp)
+set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Module.hpp Lock.hpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp tests/event.cpp)
 
 link_directories($ENV{gtest_SOURCE_DIR})
 link_directories($ENV{BOOST_HOME}/build/lib)
