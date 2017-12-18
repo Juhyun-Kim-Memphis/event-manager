@@ -42,7 +42,7 @@ public:
     }
 private:
     int type; /* TODO: enum?*/
-    size_t length; /* TODO: use c++ streambuf ? */
+    size_t length;
     char *data;
 };
 
