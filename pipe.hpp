@@ -11,39 +11,48 @@
 #include <iostream>
 #include "Event.hpp"
 
-
-
-struct Header {
-    Header() {}
-    Header(int type, size_t length) : type(type), length(length) {}
-    int type;
-    size_t length;
-};//TODO: move inside to Pipe or Message.
-
 /* can be event or task */
 class Message {
 public:
-    Message() : type(0), length(0), data(nullptr) {}
-    Message(int type, size_t length, char *data) : type(type), length(length), data(data) {}
-    ~Message() { delete data; }
+    struct Header {
+        Header() {}
+        Header(int type, size_t length) : type(type), length(length) {}
+        int type; /* TODO: enum?*/
+        size_t length;
+    };
 
-    Header getHeader() const { return Header(type, length); }
-    char *getData() const { return data; }
+    Message() : header(0, 0), data(nullptr) {}
+    Message(int type, size_t length, char *data) : header(type, length), data(data) {}
+
+    char *makeSerialzedMessage() const {
+        char *buf = new char[sizeof(Header) + header.length];
+        memcpy(buf, &header, sizeof(Header));
+        memcpy(buf + sizeof(Header), data, header.length);
+        return buf;
+    }
+    size_t getSerialzedMessageSize() const {
+        return sizeof(Header) + header.length;
+    }
 
     bool operator==(const Message &rhs) const {
-        return type == rhs.type &&
-               length == rhs.length &&
-               memcmp(data, rhs.data, length) == 0;
+        return header.type == rhs.header.type &&
+               header.length == rhs.header.length &&
+               memcmp(data, rhs.data, header.length) == 0;
         /* WARNING: memcmp can cause SEGV */
     }
 
     bool operator!=(const Message &rhs) const {
         return !(rhs == *this);
     }
+
+    friend std::ostream &operator<<(std::ostream &os, const Message &message) {
+        os << "type: " << message.header.type << " length: " << message.header.length << " data: " << message.data;
+        return os;
+    }
+
 private:
-    int type; /* TODO: enum?*/
-    size_t length;
-    char *data;
+    Header header;
+    char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 };
 
 class Pipe {
@@ -68,17 +77,14 @@ public:
 
     /* TODO: how to use just read, write as name of method? */
     void writeOneMessage(const Message &msg) {
-        Header h = msg.getHeader();
-        char *sndBuf = new char[sizeof(Header) + h.length];
-        memcpy(sndBuf, &h, sizeof(Header));
-        memcpy(sndBuf + sizeof(Header), msg.getData(), h.length);
-        write(getWritefd(), sndBuf, sizeof(Header) + h.length);
-        delete sndBuf;
+        char *sendBuffer = msg.makeSerialzedMessage();
+        write(getWritefd(), sendBuffer, msg.getSerialzedMessageSize());
+        delete sendBuffer;
     }
 
     Message *readOneMessage(){
-        Header header;
-        read(getReadfd(), &header, sizeof(Header));
+        Message::Header header;
+        read(getReadfd(), &header, sizeof(Message::Header));
         char *buf = (char *)malloc(header.length); //TODO: use streambuf or new
         read(getReadfd(), buf, header.length); //TODO: add Assertion.
         return new Message(header.type, header.length, buf);
