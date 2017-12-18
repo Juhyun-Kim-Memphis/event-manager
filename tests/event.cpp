@@ -5,7 +5,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 
 #include <gtest/gtest.h>
-#include "../Pipe.hpp"
+#include "../pipe.hpp"
 
 TEST(BoostSerialization, testStringbufToByteArray) {
     std::stringbuf buf;
@@ -92,48 +92,6 @@ TEST(BoostSerialization, testTextArchive) {
     EXPECT_EQ(newg, g);
 }
 
-TEST(BoostSerialization, testBinaryArchive) {
-    const GPSPosition g(35, 59, 24.567f);
-    std::stringbuf buf;
-    std::ostream os(&buf);
-
-    {
-        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
-        oa << g;
-        std::cout<< " ["<< buf.str()<<"]\n";
-    }
-
-    Pipe pipe;
-    write(pipe.getWritefd(), buf.str().c_str(), buf.str().size());
-
-    ////////////////////////
-
-    char charBuf[512];
-    ssize_t nbyteRead = read(pipe.getReadfd(), charBuf, buf.str().size());
-    std::stringbuf resBuf;
-    resBuf.sputn(charBuf, nbyteRead);
-
-    std::istream is(&resBuf);
-    GPSPosition newg;
-    {
-        boost::archive::binary_iarchive ia(is, boost::archive::no_header);
-        ia >> newg;
-    }
-
-    EXPECT_EQ(newg, g);
-    EXPECT_EQ(nbyteRead, buf.str().size());
-}
-
-namespace boost {
-    namespace serialization {
-        template<class Archive>
-        void serialize(Archive &ar, Event &e, const unsigned int version)
-        {
-            ar & e.type;
-        }
-    } // namespace serialization
-} // namespace boost
-
 class EventForTest : public Event {
 public:
     EventForTest() : Event('t'), data(4, 5, 4.3) {}
@@ -150,7 +108,7 @@ public:
 
     bool operator==(const EventForTest &rhs) const {
         return getEventID() == rhs.getEventID() &&
-               data == rhs.data;
+               data == rhs.data ;
     }
 
     bool operator!=(const EventForTest &rhs) const {
@@ -202,5 +160,61 @@ TEST(BoostSerialization, testMessage) {
 
     EXPECT_EQ(ev.data, resEv.data);
     EXPECT_EQ(ev.getEventID(), resEv.getEventID());
+    EXPECT_EQ(ev, resEv);
 }
 
+class Foo {
+public:
+    Foo(int in) {
+        ptr = new int;
+        *ptr = in;
+    }
+
+    virtual ~Foo() {
+        delete ptr;
+    }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & (*ptr);
+    }
+
+    bool operator==(const Foo &rhs) const {
+        return *ptr == *rhs.ptr;
+    }
+
+    bool operator!=(const Foo &rhs) const {
+        return !(rhs == *this);
+    }
+
+    int *ptr;
+};
+
+TEST(BoostSerialization, testSerializationWithPointerMember) {
+    Foo foo(3);
+    std::stringbuf buf;
+    std::ostream os(&buf);
+    {
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
+        oa << foo;
+    }
+
+    ///////////////// buf I/O
+
+    std::istream is(&buf);
+    Foo result(1);
+    int *ptrValOfMember = result.ptr;
+    {
+        boost::archive::binary_iarchive ia(is, boost::archive::no_header);
+        ia >> result;
+    }
+    EXPECT_EQ(foo, result);
+    EXPECT_EQ(ptrValOfMember, result.ptr);
+}
+
+TEST(BoostSerialization, testMessageTypeCode) {
+    /// c++ streambuf
+
+}

@@ -2,9 +2,9 @@
 #define EVENT_MANAGER_TASK_HPP
 
 #include <unistd.h>
-#include "Module.hpp"
-#include "Pipe.hpp"
+#include "pipe.hpp"
 #include "Event.hpp"
+#include "Lock.hpp"
 
 using namespace std;
 
@@ -24,22 +24,6 @@ public:
 protected:
     int writePipeFd; //TODO: change to LockUser
     int state; //TODO: make TaskState class
-};
-
-class ModifyTask : public Task {
-public:
-    ModifyTask(int wfd, Module &m)
-            : Task(wfd), module(m), numOfEventHandlerCalls(0) {}
-
-    void start() override;
-    void handle(Event event) override;
-    int getNumOfEventHandlerCalls() { return numOfEventHandlerCalls; }
-
-private:
-    void changeModule();
-
-    int numOfEventHandlerCalls;
-    Module &module;
 };
 
 class LockAcquireTask : public Task {

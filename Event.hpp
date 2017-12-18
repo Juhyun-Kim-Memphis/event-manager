@@ -1,6 +1,9 @@
 #ifndef EVENT_MANAGER_EVENT_HPP
 #define EVENT_MANAGER_EVENT_HPP
 
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
 /**
  * TODO: Move all of the actual implementations to cpp.
  * TODO: Expand on derived Events
@@ -29,7 +32,14 @@ public:
         return !(rhs == *this);
     }
 
-public: //TODO: make it private and apply intrusive serialize method.
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        ar & type;
+    }
+
+private: //TODO: make it private and apply intrusive serialize method.
     EventType type;
 };
 
