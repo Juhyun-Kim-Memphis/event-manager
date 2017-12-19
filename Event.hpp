@@ -6,12 +6,12 @@
 
 class Event {
 public:
-    typedef char EventType;
+    typedef int EventType;
 
     Event() {}
     Event(EventType t) : type(t) {}
 
-    EventType getEventID() const { return this->type; }
+    virtual EventType getEventID() const { return this->type; }
 
     bool operator==(const Event &rhs) const {
         return type == rhs.type;
@@ -30,6 +30,7 @@ public:
 
 private:
     EventType type;
+    /* TODO: can we remove this? redundant information.. */
 };
 
 #endif //EVENT_MANAGER_EVENT_HPP

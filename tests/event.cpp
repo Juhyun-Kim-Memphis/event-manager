@@ -3,8 +3,10 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include <gtest/gtest.h>
+#include <ostream>
 #include "../pipe.hpp"
 
 TEST(BoostSerialization, testStringbufToByteArray) {
@@ -168,28 +170,26 @@ public:
     Foo(int in) {
         ptr = new int;
         *ptr = in;
+        intli.push_back(in);
+        intli.push_back(in+3);
     }
 
-    virtual ~Foo() {
-        delete ptr;
-    }
+    virtual ~Foo() { delete ptr; }
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & (*ptr);
+        ar & intli;
     }
 
     bool operator==(const Foo &rhs) const {
         return *ptr == *rhs.ptr;
     }
 
-    bool operator!=(const Foo &rhs) const {
-        return !(rhs == *this);
-    }
-
     int *ptr;
+    std::vector<int> intli;
 };
 
 TEST(BoostSerialization, testSerializationWithPointerMember) {
@@ -205,16 +205,13 @@ TEST(BoostSerialization, testSerializationWithPointerMember) {
 
     std::istream is(&buf);
     Foo result(1);
+    result.intli.pop_back();
     int *ptrValOfMember = result.ptr;
     {
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
         ia >> result;
     }
     EXPECT_EQ(foo, result);
-    EXPECT_EQ(ptrValOfMember, result.ptr);
-}
-
-TEST(BoostSerialization, testMessageTypeCode) {
-    /// c++ streambuf
-
+    EXPECT_NE(foo.ptr, result.ptr);
+    EXPECT_EQ(foo.intli, result.intli);
 }

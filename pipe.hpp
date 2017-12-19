@@ -21,8 +21,9 @@ public:
         size_t length;
     };
 
-    Message() : header(0, 0), data(nullptr) {}
-    Message(int type, size_t length, char *data) : header(type, length), data(data) {}
+    Message(int type, size_t length, const char *data) : header(type, length), data(data) {}
+
+    int getType(){ return header.type; }
 
     char *makeSerialzedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
@@ -50,9 +51,9 @@ public:
         return os;
     }
 
-private:
+public:
     Header header;
-    char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
+    const char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 };
 
 class Pipe {
@@ -88,6 +89,7 @@ public:
         char *buf = (char *)malloc(header.length); //TODO: use streambuf or new
         read(getReadfd(), buf, header.length); //TODO: add Assertion.
         return new Message(header.type, header.length, buf);
+        /* TODO: use smart pointer */
     }
 
 private:
