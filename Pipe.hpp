@@ -16,12 +16,18 @@ class Message {
 public:
     struct Header {
         Header() {}
-        Header(int type, size_t length) : type(type), length(length) {}
-        int type; /* TODO: enum?*/
-        size_t length;
+        Header(uint32_t type, uint32_t length) : type(type), length(length) {}
+        uint32_t type; /* TODO: enum?*/
+        uint32_t length;
     };
 
-    Message(int type, size_t length, const char *data) : header(type, length), data(data) {}
+    Message(uint32_t type, uint32_t length, const char *src) : header(type, length), data(new char[length]) {
+        memcpy(data, src, length); /* TODO: too many copy operation of raw data. reduce them.*/
+    }
+
+    ~Message() {
+        delete data;
+    }
 
     int getType(){ return header.type; }
 
@@ -53,7 +59,7 @@ public:
 
 public:
     Header header;
-    const char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
+    char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 };
 
 class Pipe {
