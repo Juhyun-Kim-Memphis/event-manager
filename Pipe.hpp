@@ -16,12 +16,15 @@ class Message {
 public:
     struct Header {
         Header() {}
-        Header(int type, size_t length) : type(type), length(length) {}
-        int type; /* TODO: enum?*/
-        size_t length;
+        Header(uint32_t type, uint32_t length) : type(type), length(length) {}
+        uint32_t type; /* TODO: enum?*/
+        uint32_t length;
     };
 
-    Message(int type, size_t length, const char *data) : header(type, length), data(data) {}
+    Message(uint32_t type, uint32_t length, const char *src) : header(type, length), data(src) {
+        std::cout<<"src:"<<src[0]<<std::endl;
+        std::cout<<"data:"<<data[0]<<std::endl;
+    }
 
     int getType(){ return header.type; }
 
