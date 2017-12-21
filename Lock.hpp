@@ -14,26 +14,24 @@
  */
 using namespace std;
 
-
+class LockOwnershipChange : public Event {
+public:
+    LockOwnershipChange(): Event('r') {}
+};
 
 class LockUser {
 public:
     LockUser(int writePipefd) : writePipefd(writePipefd) {}
 
-    void sendEvent(LockUser to, Event input){
-        char released = input.getEventID();
-        write(to.writePipefd, &released, 1);
-    }
-private:
     int writePipefd;
 };
 
 class Lock {
 public:
     Lock(int id_) : id(id_), owner(-1), lockVal(UNLOCKED) {}
+    Lock() : Lock(0) {}
 
     virtual bool acquire(int writePipeFdOfRequester);
-
     virtual void release();
 
     int getOwner() { return owner; }
@@ -50,9 +48,14 @@ public:
     }
 
 protected:
-//    typedef int LockUser;
+    void giveLockOwnership(LockUser waiter) {
 
-    void giveLockOwnership(LockUser waiter);
+        lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
+
+        LockOwnershipChange event;
+        char released = event.getEventID();
+        write(waiter.writePipefd, &released, 1);
+    }
 
     enum LockValue {
         LOCKED = 1,
@@ -64,20 +67,6 @@ protected:
     std::deque<int> waiters;
 
     std::mutex mtx; //for testing
-};
-
-class LockUsingAOP : public Lock {
-public:
-    explicit LockUsingAOP(int id) : lockVal(0), Lock(id) {}
-
-    bool acquire(int writePipeFdOfRequester) override;
-    void release() override;
-
-private:
-    inline long aop_cas(volatile long *vp, long nv, long ov);
-
-    volatile long lockVal;
-
 };
 
 #endif //EVENT_MANAGER_LOCK_HPP

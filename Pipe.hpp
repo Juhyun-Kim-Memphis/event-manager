@@ -96,4 +96,10 @@ private:
     int fd[2];
 };
 
+class PipeWriter {
+
+private:
+    int writeFd;
+};
+
 #endif //EVENT_MANAGER_PIPE_HPP

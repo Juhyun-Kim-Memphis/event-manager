@@ -3,29 +3,10 @@
 
 #include "../Pipe.hpp"
 
-TEST(Pipe, testPipeWriteAndRead) {
-    //set message to write
-    int *in = new int;
-    *in = 7;
-    Message *message= new Message(0, 4, (char *)in);
 
-    Pipe pipe;
-    pipe.writeOneMessage(*message);
-    Message *result = pipe.readOneMessage();
+TEST(Pipe, testPipeEnd) {
 
-    EXPECT_EQ(*message, *result);
-    delete result;
-    delete message;
 }
-
-class EventB : public Event {
-public:
-    EventB(int a, bool b) : Event('B'), a(a), b(b) {}
-
-private:
-    int a;
-    bool b;
-};
 
 class EventA : public Event {
 public:
@@ -72,30 +53,6 @@ public:
     std::vector<int> intli;
     /* TODO: class object, ptr to derived class */
 };
-
-EventA *makeEventAFromMsg(Message &msg) {
-    int eventType = -1;
-    EventA *result = new EventA({});
-
-    std::stringbuf buf;
-    buf.sputn(msg.data, msg.header.length);
-    std::istream is(&buf);
-    boost::archive::binary_iarchive ia(is, boost::archive::no_header);
-    if(msg.getType() == 'A')
-        ia >> *result;
-    else{
-        throw std::string("unknown EventType: ").append(std::to_string(eventType));
-    }
-    /* TODO: when to free buf? */
-    return result;
-}
-
-void setEventAToBuf(EventA &eventA, std::stringbuf &buf){
-    std::ostream os(&buf);
-    boost::archive::binary_oarchive oa(os, boost::archive::no_header);
-    oa << eventA.getEventID();
-    oa << eventA;
-}
 
 TEST(Pipe, testDerivedEventWriteAndRead) {
     EventA eventA({4, 5});

@@ -8,22 +8,22 @@
 
 using namespace std;
 
-class TaskQuitEvent;
-
 class Task {
 public:
     Task(int wfd) : writePipeFd(wfd) {}
 
     virtual void start() = 0;
     virtual void handle(Event event) {};
-    int getWritePipeFd(){ return writePipeFd; }
+    int getWorker(){ return writePipeFd; }
     void quit(); // TODO: make it protected
-
     bool hasQuit();
 
 protected:
+    enum State {
+        TERMINATED
+    };
     int writePipeFd; //TODO: change to LockUser
-    int state; //TODO: make TaskState class
+    State state; //TODO: make TaskState class
 };
 
 class LockAcquireTask : public Task {

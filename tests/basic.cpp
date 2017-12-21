@@ -5,18 +5,12 @@
 #include "../Task.hpp"
 #include "../Worker.hpp"
 
-TEST(TaskAndEvent, testLockUserAndPipe) {
-    Pipe pipe;
-    Pipe pipeForReceiver;
-    LockUser sender(pipe.getWritefd());
-    LockUser receiver(pipeForReceiver.getWritefd());
-    Event event('k');
-    char buf[100];
+TEST(TaskAndEvent, testLock) {
+    Lock lock;
 
-    sender.sendEvent(receiver, event);
-    read(pipeForReceiver.getReadfd(), buf, 1);
+    lock.acquire(0);
 
-    EXPECT_EQ('k', buf[0]);
+    EXPECT_EQ(true, lock.hasLocked());
 }
 
 TEST(TaskAndEvent, testSuccessToAcquireLock) {
@@ -27,7 +21,7 @@ TEST(TaskAndEvent, testSuccessToAcquireLock) {
     std::thread worker(&Worker::mainLoop, Worker(pipe.getReadfd(), &task));
     worker.join();
 
-    EXPECT_EQ(task.getWritePipeFd(), lock.getOwner());
+    EXPECT_EQ(task.getWorker(), lock.getOwner());
     EXPECT_EQ(true, lock.hasLocked());
     EXPECT_EQ(vector<Lock *>({&lock}), task.getAcquiredLocks());
     EXPECT_EQ(vector<Lock *>(), task.getAwaitedLocks());
