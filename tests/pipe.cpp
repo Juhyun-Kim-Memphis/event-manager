@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <boost/serialization/vector.hpp>
 
-#include "../pipe.hpp"
+#include "../Pipe.hpp"
 
 TEST(Pipe, testPipeWriteAndRead) {
     //set message to write
@@ -44,6 +44,31 @@ public:
         ar & intli;
     }
 
+    Message makeMessage() {
+        std::stringbuf buf;
+        std::ostream os(&buf);
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
+        oa << *this;
+        return Message(getEventID(), buf.str().length(), buf.str().c_str());
+    }
+
+    static EventA *makeFromMsg(Message &msg){
+        int eventType = -1;
+        EventA *result = new EventA({});
+
+        std::stringbuf buf;
+        buf.sputn(msg.data, msg.header.length);
+        std::istream is(&buf);
+        boost::archive::binary_iarchive ia(is, boost::archive::no_header);
+        if(msg.getType() == 'A')
+            ia >> *result;
+        else{
+            throw std::string("unknown EventType: ").append(std::to_string(eventType));
+        }
+        /* TODO: when to free buf? */
+        return result;
+    }
+
     std::vector<int> intli;
     /* TODO: class object, ptr to derived class */
 };
@@ -74,24 +99,24 @@ void setEventAToBuf(EventA &eventA, std::stringbuf &buf){
 
 TEST(Pipe, testDerivedEventWriteAndRead) {
     EventA eventA({4, 5});
-    /* TODO: eventA ==> Message
-     * Message::makeMsg(eventA,
-     * */
 
     Pipe pipe;
-    {
-        std::stringbuf buf;
-        setEventAToBuf(eventA, buf);
-        pipe.writeOneMessage(Message(eventA.getEventID(), buf.str().length(), buf.str().c_str()));
-    }
+    pipe.writeOneMessage(eventA.makeMessage());
 
     Message *receivedMsg = pipe.readOneMessage();
-    EventA *receivedEvent = makeEventAFromMsg(*receivedMsg);
+    EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);
 
-//    EXPECT_EQ(eventA.intli, receivedEvent->intli);
     EXPECT_EQ(eventA, *receivedEvent);
+
     delete receivedEvent;
     delete receivedMsg;
 }
 
+/* TODO: Message only have unique_ptr<stringbuf> (to avoid copy)
+ * in this case, stringbuf already contains type, len (8byte) in front of byte array.
+ * to do that, we must know the size of the raw data before put it to stringbuf.
+ * caller of Message ctor should make this stringbuf by itself.
+ * DO NOT USE memcpy.
+ * DO NOT CONSIDER ENDIANESS in production code! (let libc++ handle endianess.)
+ * */
 

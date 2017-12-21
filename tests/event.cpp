@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 #include <ostream>
-#include "../pipe.hpp"
+#include "../Pipe.hpp"
 
 TEST(BoostSerialization, testStringbufToByteArray) {
     std::stringbuf buf;

@@ -2,7 +2,7 @@
 #define EVENT_MANAGER_TASK_HPP
 
 #include <unistd.h>
-#include "pipe.hpp"
+#include "Pipe.hpp"
 #include "Event.hpp"
 #include "Lock.hpp"
 

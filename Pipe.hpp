@@ -96,18 +96,4 @@ private:
     int fd[2];
 };
 
-class PipeInputGate {
-public:
-    explicit PipeInputGate(int writeFd) : writeFd(writeFd) {}
-    explicit PipeInputGate(Pipe pipe) : writeFd(pipe.getWritefd()) {}
-
-    void sendEvent(Event &input) {
-        char released = 'r';
-        write(writeFd, &released, 1);
-    }
-
-private:
-    int writeFd;
-};
-
 #endif //EVENT_MANAGER_PIPE_HPP
