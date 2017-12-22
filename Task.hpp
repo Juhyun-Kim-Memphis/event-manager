@@ -10,37 +10,39 @@ using namespace std;
 
 class Task {
 public:
-    Task(int wfd) : writePipeFd(wfd) {}
+    Task(PipeWriter &pw) : lockUser(pw), state(INITIAL) {}
 
     virtual void start() = 0;
     virtual void handle(Event event) {};
-    int getWorker(){ return writePipeFd; }
     void quit(); // TODO: make it protected
     bool hasQuit();
 
 protected:
     enum State {
+        INITIAL,
         TERMINATED
     };
-    int writePipeFd; //TODO: change to LockUser
+    PipeWriter &lockUser;
     State state; //TODO: make TaskState class
 };
 
 class LockAcquireTask : public Task {
 public:
-    LockAcquireTask(int wfd, vector<Lock*> requiredLocks)
-            : Task(wfd), requiredLocks(std::move(requiredLocks)) {}
+    LockAcquireTask(PipeWriter &pw, vector<Lock*> requiredLocks)
+            : Task(pw), requiredLocks(std::move(requiredLocks)) {}
 
     void start() override {
+        Lock::User myself = &lockUser;
+
         for(Lock *lock : requiredLocks){
-            if(lock->acquire(writePipeFd))
+            if(lock->acquire(myself))
                 acquiredLocks.push_back(lock);
         }
         quit();
     }
 
     vector<Lock*> getAwaitedLocks() {
-        int myself = writePipeFd;
+        Lock::User myself = &lockUser;
         vector<Lock*> awaitedLocks;
 
         for(Lock *lock : requiredLocks){

@@ -1,30 +1,6 @@
 #include <gtest/gtest.h>
 #include <boost/serialization/vector.hpp>
-
 #include "../Pipe.hpp"
-
-
-
-TEST(Pipe, testPipeReaderWriter) {
-    Pipe pipe;
-    EventA eventA({4, 5});
-
-    PipeWriter &pipeWriter = pipe.writer();
-    pipeWriter.writeOneMessage(eventA.makeMessage());
-
-    PipeReader &pipeReader = pipe.reader();
-    Message *receivedMsg = pipeReader.readOneMessage();
-    EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);
-
-    EXPECT_EQ(eventA, *receivedEvent);
-
-    delete receivedEvent;
-    delete receivedMsg;
-}
-
-/*
- * TODO:: add fork test and pipeEnd close test.
- * */
 
 class EventA : public Event {
 public:
@@ -62,7 +38,7 @@ public:
         if(msg.getType() == 'A')
             ia >> *result;
         else{
-            throw std::string("unknown EventType: ").append(std::to_string(eventType));
+            throw std::string("unknown EventType: ").append(std::to_string(msg.getType()));
         }
         /* TODO: when to free buf? */
         return result;
@@ -72,13 +48,34 @@ public:
     /* TODO: class object, ptr to derived class */
 };
 
+TEST(Pipe, testPipeReaderWriter) {
+    Pipe pipe;
+    EventA eventA({4, 5});
+
+    PipeWriter &pipeWriter = pipe.writer();
+    pipeWriter.writeOneMessage(eventA.makeMessage());
+
+    PipeReader &pipeReader = pipe.reader();
+    Message *receivedMsg = pipeReader.readOneMessage();
+    EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);
+
+    EXPECT_EQ(eventA, *receivedEvent);
+
+    delete receivedEvent;
+    delete receivedMsg;
+}
+
+/*
+ * TODO:: add fork test and pipeEnd close test.
+ * */
+
 TEST(Pipe, testDerivedEventWriteAndRead) {
     EventA eventA({4, 5});
 
     Pipe pipe;
-    pipe.writeOneMessage(eventA.makeMessage());
+    pipe.writer().writeOneMessage(eventA.makeMessage());
 
-    Message *receivedMsg = pipe.readOneMessage();
+    Message *receivedMsg = pipe.reader().readOneMessage();
     EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);
 
     EXPECT_EQ(eventA, *receivedEvent);

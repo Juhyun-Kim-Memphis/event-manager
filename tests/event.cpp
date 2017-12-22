@@ -14,10 +14,10 @@ TEST(BoostSerialization, testStringbufToByteArray) {
     buf.sputn("abc", 4);
 
     Pipe pipe;
-    write(pipe.getWritefd(), buf.str().c_str(), buf.str().size());
+    pipe.writer().writeBytes(buf.str().c_str(), buf.str().size());
 
     char charBuf[10];
-    ssize_t nbyteRead = read(pipe.getReadfd(), charBuf, buf.str().size());
+    ssize_t nbyteRead = pipe.reader().readBytes(charBuf, buf.str().size());
 
     std::stringbuf resBuf(charBuf);
 
@@ -137,18 +137,18 @@ TEST(BoostSerialization, testMessage) {
     memcpy(data + sizeof(uint32_t), buf.str().c_str(), length); //TODO: make ev to be serialized first!
 
     Pipe pipe;
-    write(pipe.getWritefd(), data, msgSize);
+    pipe.writer().writeBytes(data, msgSize);
 
     ///////
 
     int len;
     char recvBuf[512];
     ssize_t nbyteRead;
-    nbyteRead = read(pipe.getReadfd(), &len, sizeof(uint32_t)); //read length first
+    nbyteRead = pipe.reader().readBytes(&len, sizeof(uint32_t)); //read length first
     EXPECT_EQ(sizeof(uint32_t), nbyteRead);
     EXPECT_EQ(length, len);
 
-    nbyteRead = read(pipe.getReadfd(), recvBuf, len);
+    nbyteRead = pipe.reader().readBytes(recvBuf, len);
     EXPECT_EQ(len, nbyteRead);
 
     std::stringbuf resBuf;
@@ -206,7 +206,6 @@ TEST(BoostSerialization, testSerializationWithPointerMember) {
     std::istream is(&buf);
     Foo result(1);
     result.intli.pop_back();
-    int *ptrValOfMember = result.ptr;
     {
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
         ia >> result;

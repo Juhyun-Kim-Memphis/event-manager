@@ -2,17 +2,17 @@
 #include <iostream>
 #include "Lock.hpp"
 
-bool Lock::acquire(int writePipeFdOfRequester) {
+bool Lock::acquire(User requester) {
     bool acquired = false;
     mtx.lock();
 
     if (lockVal == UNLOCKED) {
         lockVal = LOCKED;
-        owner = writePipeFdOfRequester;
+        owner = requester;
         acquired = true;
     }
     else{
-        waiters.push_back(writePipeFdOfRequester);
+        waiters.push_back(requester);
         acquired = false;
     }
 
@@ -29,11 +29,11 @@ void Lock::release() {
 
     if (waiters.empty()) {
         lockVal = UNLOCKED;
+        owner = nullptr;
     } else {
         //TODO: write lock's id to pipe.
-        int waiterfd = waiters.front();
+        User waiter = waiters.front();
         waiters.pop_front();
-        LockUser waiter(waiterfd);
 
         giveLockOwnership(waiter);
     }

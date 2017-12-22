@@ -62,50 +62,76 @@ public:
     char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 };
 
+class PipeWriter {
+public:
+    PipeWriter(int writeFd) : writeFd(writeFd) {}
+    PipeWriter() {}
+    void setFd(int fd) { writeFd = fd; } /* TODO: remove this. */
+
+    void writeOneMessage(const Message &msg) const {
+        char *sendBuffer = msg.makeSerialzedMessage();
+        write(writeFd, sendBuffer, msg.getSerialzedMessageSize());
+        delete sendBuffer;
+    }
+
+    ssize_t writeBytes(const void *data, size_t len) const{
+        return write(writeFd, data, len);
+    }
+
+private:
+    PipeWriter(const PipeWriter& pw) = delete;
+    PipeWriter(PipeWriter&& pw) = delete;
+    int writeFd;
+};
+
+class PipeReader {
+public:
+    PipeReader(int readFd) : readFd(readFd) {}
+    PipeReader() {}
+    void setFd(int fd) { readFd = fd; }
+
+    Message *readOneMessage() const {
+        Message::Header header;
+        read(readFd, &header, sizeof(Message::Header));
+        char *buf = (char *)malloc(header.length); //TODO: use streambuf or new
+        read(readFd, buf, header.length); //TODO: add Assertion.
+        return new Message(header.type, header.length, buf);
+        /* TODO: use smart pointer */
+    }
+
+    ssize_t readBytes(void *buf, size_t len) const {
+        return read(readFd, buf, len);
+    }
+
+private:
+    PipeReader(const PipeReader& pw) = delete;
+    PipeReader(PipeReader&& pw) = delete;
+    int readFd;
+};
+
 class Pipe {
 public:
     Pipe() {
         if (pipe(fd) == -1)
             throw std::string("pipe creation fails.");
+        readEnd.setFd(fd[0]);
+        writeEnd.setFd(fd[1]);
     }
 
     virtual ~Pipe() {
-        close(getReadfd());
-        close(getWritefd());
+        close(fd[0]);
+        close(fd[1]);
     }
 
-    int getReadfd() { //TODO: remove
-        return fd[0];
-    }
-
-    int getWritefd() {
-        return fd[1];
-    }
-
-    /* TODO: how to use just read, write as name of method? */
-    void writeOneMessage(const Message &msg) {
-        char *sendBuffer = msg.makeSerialzedMessage();
-        write(getWritefd(), sendBuffer, msg.getSerialzedMessageSize());
-        delete sendBuffer;
-    }
-
-    Message *readOneMessage(){
-        Message::Header header;
-        read(getReadfd(), &header, sizeof(Message::Header));
-        char *buf = (char *)malloc(header.length); //TODO: use streambuf or new
-        read(getReadfd(), buf, header.length); //TODO: add Assertion.
-        return new Message(header.type, header.length, buf);
-        /* TODO: use smart pointer */
-    }
+    PipeReader& reader(){ return readEnd; }
+    PipeWriter& writer(){ return writeEnd; }
 
 private:
     int fd[2];
+    PipeReader readEnd;
+    PipeWriter writeEnd;
 };
 
-class PipeWriter {
 
-private:
-    int writeFd;
-};
 
 #endif //EVENT_MANAGER_PIPE_HPP
