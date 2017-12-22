@@ -7,6 +7,7 @@
 class Worker {
 public:
     //TODO: remove task argument and get task via pipe. (use state pattern?)
+    /* TODO: workerMain shouldn't get any arguments except its read pipe. */
     //TODO: Dynamic task assignment for workers - at the moment ,
     Worker(PipeReader &pr, Task *t) : pipeReader(pr), currentTask(t) {}
 
@@ -14,16 +15,20 @@ public:
         currentTask->start();
 
         while( !currentTask->hasQuit() ) {
-            Event event = waitAndGetEvent();
-            currentTask->handle(event);
-            throw std::string("CANNOT REACH HERE.");
+            Message *msg = waitAndGetMessage();
+            currentTask->handle(msg);
         }
     }
 
 private:
-    Event waitAndGetEvent() {
-        //Need to check if this throw works properly
-        throw std::string("[ERROR]Pipe Read Performed Incorrectly!");
+    /* TODO: make return type to unique_ptr */
+    Message *waitAndGetMessage() {
+        try{
+            return pipeReader.readOneMessage();
+        } catch (const std::exception& ex) {
+            std::cout<<"Exception at waitAndGetMessage: "<<ex.what()<<std::endl;
+            exit(1);
+        }
     }
 
     PipeReader &pipeReader;

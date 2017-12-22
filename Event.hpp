@@ -8,7 +8,7 @@ class Event {
 public:
     typedef int EventType;
 
-    Event() {}
+    Event() : type(0) {}
     Event(EventType t) : type(t) {}
 
     virtual EventType getEventID() const { return this->type; }

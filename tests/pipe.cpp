@@ -45,6 +45,7 @@ public:
     }
 
     std::vector<int> intli;
+
     /* TODO: class object, ptr to derived class */
 };
 

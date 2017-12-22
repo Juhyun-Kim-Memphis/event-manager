@@ -66,6 +66,7 @@ class PipeWriter {
 public:
     PipeWriter(int writeFd) : writeFd(writeFd) {}
     PipeWriter() {}
+
     void setFd(int fd) { writeFd = fd; } /* TODO: remove this. */
 
     void writeOneMessage(const Message &msg) const {

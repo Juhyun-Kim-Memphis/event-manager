@@ -71,8 +71,8 @@ protected:
         LockOwnershipChange event;
 
         lockVal = LOCKED; /* acquire lock on behalf of the waiter. */
-        waiter->writeOneMessage(event.makeMessage()); /* waiter got msg. */
         owner = waiter;
+        waiter->writeOneMessage(event.makeMessage()); /* waiter got msg. */
     }
 
     enum LockValue {
