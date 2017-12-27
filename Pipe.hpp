@@ -57,6 +57,11 @@ public:
         return os;
     }
 
+    static Message makeDummyMessage() {
+        char dummyChar = '\0';
+        return Message(0,1, &dummyChar);
+    }
+
 public:
     Header header;
     char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */

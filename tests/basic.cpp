@@ -6,7 +6,6 @@
 #include "../Task.hpp"
 #include "../Worker.hpp"
 
-
 class LockAcquireTask : public Task {
 public:
     LockAcquireTask(PipeWriter &pw, vector<Lock*> requiredLocks)
@@ -49,7 +48,7 @@ TEST(TaskAndEvent, testSuccessToAcquireLock) {
     Lock lock;
     LockAcquireTask task(pipe.writer(), vector<Lock*>({&lock}));
 
-    std::thread worker(&Worker::mainLoop, Worker(pipe.reader(), &task));
+    std::thread worker(&Worker::mainMethod, Worker(pipe.reader(), &task));
     worker.join();
 
     EXPECT_EQ(&pipe.writer(), lock.getOwner());
@@ -70,7 +69,7 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
 
     Pipe pipe;
     LockAcquireTask task(pipe.writer(), vector<Lock*>({&lock}));
-    std::thread worker(&Worker::mainLoop, Worker(pipe.reader(), &task));
+    std::thread worker(&Worker::mainMethod, Worker(pipe.reader(), &task));
     worker.join();
 
     EXPECT_EQ(true, lock.isInWaiters(&pipe.writer()));
@@ -85,11 +84,11 @@ TEST(TaskAndEvent, testWaitMultipleLocks) {
     LockAcquireTask acquireTask(pipe[0].writer(), targetLocks);
     LockAcquireTask multiLockWaitTask(pipe[1].writer(), targetLocks);
 
-    std::thread lockOwner(&Worker::mainLoop, Worker(pipe[0].reader(), &acquireTask));
+    std::thread lockOwner(&Worker::mainMethod, Worker(pipe[0].reader(), &acquireTask));
     lockOwner.join();
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
-    std::thread waiter(&Worker::mainLoop, Worker(pipe[1].reader(), &multiLockWaitTask));
+    std::thread waiter(&Worker::mainMethod, Worker(pipe[1].reader(), &multiLockWaitTask));
     waiter.join();
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
 }
@@ -119,7 +118,6 @@ public:
     }
 
     bool isWaiting() { return waiting; }
-
     bool isStartDone() { return startDone; };
 
 private:
@@ -136,7 +134,7 @@ TEST(TaskAndEvent, testEventWaitingTask) {
     lock.acquire(tester);
 
     LockWaitingTask task(pipeForWorker.writer(), lock);
-    std::thread worker(&Worker::mainLoop, Worker(pipeForWorker.reader(), &task));
+    std::thread worker(&Worker::mainMethod, Worker(pipeForWorker.reader(), &task));
 
     while( !task.isStartDone() )
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
