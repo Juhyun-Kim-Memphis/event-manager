@@ -15,7 +15,6 @@ public:
     //TODO: remove task argument and get task via pipe. (use state pattern?)
     /* TODO: workerMain shouldn't get any arguments except its read pipe. */
     //TODO: Dynamic task assignment for workers - at the moment ,
-    Worker(PipeReader &pr, Task *t) : pipeReader(pr), currentTask(t), idle(true), startDone(false), terminated(false) {}
     Worker(PipeReader &pr) : pipeReader(pr), currentTask(nullptr), idle(true), startDone(false), terminated(false), workerThread(std::thread(&Worker::mainMethod, this)) {}
 
 /*

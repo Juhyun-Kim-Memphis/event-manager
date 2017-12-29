@@ -47,9 +47,9 @@ TEST(TaskAndEvent, testSuccessToAcquireLock) {
     Pipe pipe;
     Lock lock;
     LockAcquireTask task(pipe.writer(), vector<Lock*>({&lock}));
-
-    std::thread worker(&Worker::mainMethod, Worker(pipe.reader(), &task));
-    worker.join();
+    Worker worker(pipe.reader());
+    worker.assignTask(&task);
+    worker.cleanThread();
 
     EXPECT_EQ(&pipe.writer(), lock.getOwner());
     /* TODO: modify &pipe.writer() to task.getWorker or something other.. */
@@ -69,8 +69,9 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
 
     Pipe pipe;
     LockAcquireTask task(pipe.writer(), vector<Lock*>({&lock}));
-    std::thread worker(&Worker::mainMethod, Worker(pipe.reader(), &task));
-    worker.join();
+    Worker worker(pipe.reader());
+    worker.assignTask(&task);
+    worker.cleanThread();
 
     EXPECT_EQ(true, lock.isInWaiters(&pipe.writer()));
     EXPECT_EQ(vector<Lock *>(), task.getAcquiredLocks());
@@ -84,12 +85,14 @@ TEST(TaskAndEvent, testWaitMultipleLocks) {
     LockAcquireTask acquireTask(pipe[0].writer(), targetLocks);
     LockAcquireTask multiLockWaitTask(pipe[1].writer(), targetLocks);
 
-    std::thread lockOwner(&Worker::mainMethod, Worker(pipe[0].reader(), &acquireTask));
-    lockOwner.join();
+    Worker lockOwner(pipe[0].reader());
+    lockOwner.assignTask(&acquireTask);
+    lockOwner.cleanThread();
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
-    std::thread waiter(&Worker::mainMethod, Worker(pipe[1].reader(), &multiLockWaitTask));
-    waiter.join();
+    Worker waiter(pipe[1].reader());
+    waiter.assignTask(&multiLockWaitTask);
+    waiter.cleanThread();
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
 }
 
@@ -134,7 +137,8 @@ TEST(TaskAndEvent, testEventWaitingTask) {
     lock.acquire(tester);
 
     LockWaitingTask task(pipeForWorker.writer(), lock);
-    std::thread worker(&Worker::mainMethod, Worker(pipeForWorker.reader(), &task));
+    Worker worker(pipeForWorker.reader());
+    worker.assignTask(&task);
 
     while( !task.isStartDone() )
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
@@ -146,5 +150,5 @@ TEST(TaskAndEvent, testEventWaitingTask) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
 
     EXPECT_EQ(true, task.hasQuit());
-    worker.join();
+    worker.cleanThread();
 }
