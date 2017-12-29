@@ -51,3 +51,37 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
     EXPECT_TRUE(worker.isIdle());
     worker.cleanThread();
 }
+
+TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState) {
+    Worker worker;
+    DummyTask task;
+    DummyTask anotherTask;
+    worker.assignTask(&task);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
+
+    EXPECT_EQ(&task, worker.getCurrentTask());
+
+    Message dummyMsg = Message::makeDummyMessage();
+    worker.getPipeWriter().writeOneMessage(dummyMsg);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
+
+    EXPECT_EQ(nullptr, worker.getCurrentTask());
+    EXPECT_TRUE(worker.isIdle());
+
+    worker.assignTask(&anotherTask);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
+
+    EXPECT_EQ(&anotherTask, worker.getCurrentTask());
+
+    worker.getPipeWriter().writeOneMessage(dummyMsg);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
+
+    EXPECT_EQ(nullptr, worker.getCurrentTask());
+    EXPECT_TRUE(worker.isIdle());
+
+    worker.cleanThread();
+}
