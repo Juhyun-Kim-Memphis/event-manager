@@ -13,7 +13,7 @@ void Worker::idleLoop() {
             break;
         }
         else if (terminated)
-            return;
+            throw StopTask();
     }
 }
 

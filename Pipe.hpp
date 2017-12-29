@@ -76,6 +76,7 @@ public:
 
     void writeOneMessage(const Message &msg) const {
         char *sendBuffer = msg.makeSerializedMessage();
+        write(writeFd, sendBuffer, msg.getSerializedMessageSize());
         delete sendBuffer;
     }
 

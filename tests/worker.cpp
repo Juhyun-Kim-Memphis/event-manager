@@ -33,9 +33,6 @@ TEST(Worker, testPassTaskToWorker) {
     EXPECT_FALSE(worker.isIdle());
     worker.terminate();
     worker.cleanThread();
-
-    EXPECT_EQ(nullptr, worker.getCurrentTask());
-    EXPECT_TRUE(worker.isIdle());
 }
 
 TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
