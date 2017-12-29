@@ -3,10 +3,9 @@
 #include <chrono>
 
 TEST(Worker, testIdle) {
-    Pipe pipe;
-    Worker worker(pipe.reader());
+    Worker worker;
     EXPECT_EQ(true, worker.isIdle());
-    worker.terminate(pipe.writer());
+    worker.terminate();
     worker.cleanThread();
 }
 
@@ -24,17 +23,15 @@ public:
 };
 
 TEST(Worker, testPassTaskToWorker) {
-    Pipe pipe;
-    Worker worker(pipe.reader());
+    Worker worker;
     DummyTask task;
     worker.assignTask(&task);
 
-    while( !worker.startDone )
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
 
     EXPECT_EQ(&task, worker.getCurrentTask());
     EXPECT_FALSE(worker.isIdle());
-    worker.terminate(pipe.writer());
+    worker.terminate();
     worker.cleanThread();
 
     EXPECT_EQ(nullptr, worker.getCurrentTask());
@@ -42,20 +39,16 @@ TEST(Worker, testPassTaskToWorker) {
 }
 
 TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
-    Pipe pipe;
-    Worker worker(pipe.reader());
+    Worker worker;
     DummyTask task;
     worker.assignTask(&task);
 
-    while( !worker.startDone )
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
-    worker.startDone=false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
 
     Message dummyMsg = Message::makeDummyMessage();
-    pipe.writer().writeOneMessage(dummyMsg);
+    worker.getPipeWriter().writeOneMessage(dummyMsg);
 
-    while( !worker.startDone )
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
 
     EXPECT_EQ(nullptr, worker.getCurrentTask());
     EXPECT_TRUE(worker.isIdle());
