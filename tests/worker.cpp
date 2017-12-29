@@ -1,16 +1,15 @@
 #include "gtest/gtest.h"
 #include "../Worker.hpp"
 #include <chrono>
-#include <thread>
 
 TEST(Worker, testIdle) {
     Pipe pipe;
     Worker worker(pipe.reader());
-    std::thread workerThread(&Worker::mainMethod, &worker);
     EXPECT_EQ(true, worker.isIdle());
     worker.terminate(pipe.writer());
-    workerThread.join();
+    worker.cleanThread();
 }
+
 
 class DummyTask : public Task {
 public:
@@ -27,7 +26,6 @@ public:
 TEST(Worker, testPassTaskToWorker) {
     Pipe pipe;
     Worker worker(pipe.reader());
-    std::thread workerThread(&Worker::mainMethod, &worker);
     DummyTask task;
     worker.assignTask(&task);
 
@@ -37,7 +35,7 @@ TEST(Worker, testPassTaskToWorker) {
     EXPECT_EQ(&task, worker.getCurrentTask());
     EXPECT_FALSE(worker.isIdle());
     worker.terminate(pipe.writer());
-    workerThread.join();
+    worker.cleanThread();
 
     EXPECT_EQ(nullptr, worker.getCurrentTask());
     EXPECT_TRUE(worker.isIdle());
@@ -46,7 +44,6 @@ TEST(Worker, testPassTaskToWorker) {
 TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
     Pipe pipe;
     Worker worker(pipe.reader());
-    std::thread workerThread(&Worker::mainMethod, &worker);
     DummyTask task;
     worker.assignTask(&task);
 
@@ -62,5 +59,5 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
 
     EXPECT_EQ(nullptr, worker.getCurrentTask());
     EXPECT_TRUE(worker.isIdle());
-    workerThread.join();
+    worker.cleanThread();
 }

@@ -31,13 +31,13 @@ public:
 
     int getType(){ return header.type; }
 
-    char *makeSerialzedMessage() const {
+    char *makeSerializedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
         memcpy(buf, &header, sizeof(Header));
         memcpy(buf + sizeof(Header), data, header.length);
         return buf;
     }
-    size_t getSerialzedMessageSize() const {
+    size_t getSerializedMessageSize() const {
         return sizeof(Header) + header.length;
     }
 
@@ -75,8 +75,8 @@ public:
     void setFd(int fd) { writeFd = fd; } /* TODO: remove this. */
 
     void writeOneMessage(const Message &msg) const {
-        char *sendBuffer = msg.makeSerialzedMessage();
-        write(writeFd, sendBuffer, msg.getSerialzedMessageSize());
+        char *sendBuffer = msg.makeSerializedMessage();
+        write(writeFd, sendBuffer, msg.getSerializedMessageSize());
         delete sendBuffer;
     }
 

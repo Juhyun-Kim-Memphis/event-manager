@@ -16,7 +16,19 @@ public:
     /* TODO: workerMain shouldn't get any arguments except its read pipe. */
     //TODO: Dynamic task assignment for workers - at the moment ,
     Worker(PipeReader &pr, Task *t) : pipeReader(pr), currentTask(t), idle(true), startDone(false), terminated(false) {}
-    Worker(PipeReader &pr) : pipeReader(pr), currentTask(nullptr), idle(true), startDone(false), terminated(false) {}
+    Worker(PipeReader &pr) : pipeReader(pr), currentTask(nullptr), idle(true), startDone(false), terminated(false), workerThread(std::thread(&Worker::mainMethod, this)) {}
+
+/*
+ * TODO: 생성자에서 Thread 정리
+    ~Worker() {
+        workerThread.join();
+        그 외 flag들 정리
+    }
+*/
+
+    void cleanThread() {
+        workerThread.join();
+    }
 
     void mainMethod() {
         try {
@@ -66,6 +78,7 @@ public:
         currentTask = nullptr;
     }
 
+
     bool startDone; /* TEST */
 
 private:
@@ -83,6 +96,11 @@ private:
             exit(1);
         }
     }
+
+    std::thread workerThread;
+
+    /*TODO
+    Pipe pipe*/
     PipeReader &pipeReader;
     Task *currentTask;
     bool idle;
