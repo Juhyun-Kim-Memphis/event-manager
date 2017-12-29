@@ -28,16 +28,8 @@ public:
         workerThread.join();
     }
 
-    void mainMethod() {
-        try {
-            tryLoop();
-        } catch (const StopTask& stopTaskException) {
-            /*std::cerr << "exception caught: " << stopTaskException.what() << std::endl;*/
-            return;
-        }
-    }
+    void mainMethod();
 
-    void tryLoop();
     void idleLoop();
     void runningLoop();
 

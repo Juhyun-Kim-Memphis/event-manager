@@ -105,15 +105,15 @@ class LockWaitingTask : public Task {
 public:
     LockWaitingTask(PipeWriter &pw, Lock &lock) : Task()
             , lockUser(pw), desiredLock(lock)
-            , waiting(false), startDone(false) {}
+            , waiting(false) {}
 
     void start() override {
-        if(desiredLock.acquire(&lockUser))
+        if(desiredLock.acquire(&lockUser)){
             throw std::string("LockWaitingTask assumes the desiredLock is already taken.");
+        }
         else
             waiting = true;
 
-        startDone = true;
     }
 
     void handle(Message *msg) override {
@@ -125,35 +125,32 @@ public:
         quit();
     }
 
-    bool isWaiting() { return waiting; }
-    bool isStartDone() { return startDone; };
+    bool isWaiting() { return waiting; };
 
 private:
     Lock &desiredLock;
     PipeWriter &lockUser;
     bool waiting;
-    bool startDone;
 };
 
-//TEST(TaskAndEvent, testEventWaitingTask) {
-//    Lock lock;
-//    Pipe pipeForTester, pipeForWorker;
-//    Lock::User tester = &pipeForTester.writer();
-//    lock.acquire(tester);
+TEST(TaskAndEvent, testEventWaitingTask) {
+    Lock lock;
+    Pipe pipeForTester;
+    Lock::User tester = &pipeForTester.writer();
+    lock.acquire(tester);
+
+    EXPECT_EQ(tester, lock.getOwner());
+
+    Worker worker;
+    LockWaitingTask task(worker.getPipeWriter(), lock);
+    worker.assignTask(&task);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    EXPECT_EQ(true, task.isWaiting());
+    lock.release();
 //
-//    LockWaitingTask task(pipeForWorker.writer(), lock);
-//    Worker worker;
-//    worker.assignTask(&task);
-//
-//    while( !task.isStartDone() )
-//        std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
-//
-//    EXPECT_EQ(true, task.isWaiting());
-//    lock.release();
-//
-//    while( !task.hasQuit() )
-//        std::this_thread::sleep_for(std::chrono::milliseconds(1)); /* BUSY WAITING */
-//
-//    EXPECT_EQ(true, task.hasQuit());
-//    worker.cleanThread();
-//}
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    EXPECT_EQ(true, task.hasQuit());
+    worker.cleanThread();
+}

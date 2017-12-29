@@ -84,6 +84,8 @@ public:
         return write(writeFd, data, len);
     }
 
+    int getWriteFd() const { return writeFd; }
+
 private:
     PipeWriter(const PipeWriter& pw) = delete;
     PipeWriter(PipeWriter&& pw) = delete;

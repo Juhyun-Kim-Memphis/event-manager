@@ -27,7 +27,7 @@ TEST(Worker, testPassTaskToWorker) {
     DummyTask task;
     worker.assignTask(&task);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
 
     EXPECT_EQ(&task, worker.getCurrentTask());
     EXPECT_FALSE(worker.isIdle());

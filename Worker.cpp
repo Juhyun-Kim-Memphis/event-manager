@@ -6,15 +6,13 @@ void Worker::assignTask(Task *newTask) {
 }
 
 void Worker::idleLoop() {
-    while (idle){
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        if(currentTask){
-            idle = false;
-            break;
-        }
-        else if (terminated)
-            throw StopTask();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));  /* TODO condvar*/
+    if(currentTask){
+        idle = false; /* Status changes to Running */
+        return;
     }
+    else if (terminated)
+        throw StopTask();
 }
 
 void Worker::runningLoop() {
@@ -24,15 +22,23 @@ void Worker::runningLoop() {
         Message *msg = waitAndGetMessage();
         currentTask->handle(msg);
     }
+
+    idle = true; /* Status changes to Idle */
+    currentTask = nullptr;
 }
 
-void Worker::tryLoop() {
-
-        idleLoop();
-        runningLoop();
-        idle = true;
-        currentTask = nullptr;
-
+void Worker::mainMethod() {
+    try {
+        while(true){
+            if(idle)
+                idleLoop();
+            else
+                runningLoop();
+        }
+    } catch (const StopTask& stopTaskException) {
+        /*std::cerr << "exception caught: " << stopTaskException.what() << std::endl;*/
+        return;
+    }
 }
 
 void Worker::terminate() { /* TODO: remove PipeWriter Parameter */
