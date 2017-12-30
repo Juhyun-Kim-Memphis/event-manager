@@ -5,10 +5,8 @@
 TEST(Worker, testIdle) {
     Worker worker;
     EXPECT_EQ(true, worker.isIdle());
-    worker.terminate();
     worker.cleanThread();
 }
-
 
 class DummyTask : public Task {
 public:
@@ -31,7 +29,6 @@ TEST(Worker, testPassTaskToWorker) {
 
     EXPECT_EQ(&task, worker.getCurrentTask());
     EXPECT_FALSE(worker.isIdle());
-    worker.terminate();
     worker.cleanThread();
 }
 
@@ -43,7 +40,7 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
 
     Message dummyMsg = Message::makeDummyMessage();
-    worker.getPipeWriter().writeOneMessage(dummyMsg);
+    worker.sendMessage(dummyMsg);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
 
@@ -63,7 +60,7 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState
     EXPECT_EQ(&task, worker.getCurrentTask());
 
     Message dummyMsg = Message::makeDummyMessage();
-    worker.getPipeWriter().writeOneMessage(dummyMsg);
+    worker.sendMessage(dummyMsg);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
 
@@ -76,7 +73,7 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState
 
     EXPECT_EQ(&anotherTask, worker.getCurrentTask());
 
-    worker.getPipeWriter().writeOneMessage(dummyMsg);
+    worker.sendMessage(dummyMsg);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
 

@@ -71,9 +71,9 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     Worker worker;
     LockAcquireTask task(worker.getPipeWriter(), vector<Lock*>({&lock}));
     worker.assignTask(&task);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-    EXPECT_EQ(true, lock.isInWaiters(&worker.getPipeWriter()));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    EXPECT_EQ(true, lock.isInWaiters(worker.getLockUser()));
     EXPECT_EQ(vector<Lock *>(), task.getAcquiredLocks());
     EXPECT_EQ(vector<Lock *>({&lock}), task.getAwaitedLocks());
 
@@ -146,10 +146,9 @@ TEST(TaskAndEvent, testEventWaitingTask) {
     worker.assignTask(&task);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
     EXPECT_EQ(true, task.isWaiting());
     lock.release();
-//
+
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     EXPECT_EQ(true, task.hasQuit());
     worker.cleanThread();

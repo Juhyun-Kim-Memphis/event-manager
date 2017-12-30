@@ -4,54 +4,57 @@
 #include <thread>
 #include "Task.hpp"
 #include "Event.hpp"
-
-
-
-
-
+#include "Lock.hpp"
 
 class Worker {
 public:
-    class StopTask : public std::exception {
-    public:
-        const char* what() const noexcept {return "Stop The current task.\n";}
-    };
-
-    //TODO: remove task argument and get task via pipe. (use state pattern?)
-    /* TODO: workerMain shouldn't get any arguments except its read pipe. */
     //TODO: Dynamic task assignment for workers - at the moment ,
     Worker() : pipe(), currentTask(nullptr), idle(true), terminated(false),
                workerThread(std::thread(&Worker::mainMethod, this)) {}
 
-    void cleanThread() {
-        terminate();
-        workerThread.join();
-    }
-
     void mainMethod();
 
-    void idleLoop();
-    void runningLoop();
+    void assignTask(Task *newTask){
+        currentTask = newTask;
+    }
 
-    void assignTask(Task *newTask);
-    Task* getCurrentTask() { return currentTask; } /* TEST */
-    bool isIdle() { return idle; } /* TEST */
-    void terminate();
-
-    PipeWriter &getPipeWriter(){
-        return pipe.writer();
+    /* send a message to this worker */
+    void sendMessage(const Message& msg) {
+        pipe.writer().writeOneMessage(msg);
     }
 
     Lock::User getLockUser(){
         return &getPipeWriter();
     }
 
+    bool isIdle() { return idle; }
+
+    void cleanThread() {
+        terminate();
+        workerThread.join();
+    }
+
+    class StopRunning : public std::exception {
+    public:
+        const char* what() const noexcept {return "Stop The current task.\n";}
+    };
+
+    /* for testing */
+    Task* getCurrentTask() { return currentTask; }
+
+    PipeWriter &getPipeWriter(){ /* TODO: remove */
+        return pipe.writer();
+    }
+
 private:
-    /* TODO: make return type to unique_ptr */
-    Message *waitAndGetMessage();
+    void idleLoop();
+    void runningLoop();
+    Message *waitAndGetMessage(); /* TODO: make return type to unique_ptr */
+    void terminate();
+
     std::thread workerThread;
     Pipe pipe;
-    Task *currentTask;
+    Task *currentTask; /* TODO: remove */
     bool idle;
     bool terminated;
 };

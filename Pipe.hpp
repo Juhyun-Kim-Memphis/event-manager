@@ -3,7 +3,6 @@
 #ifdef _WIN32
 #include <mingw.thread.h>
 #include <fcntl.h>
-#define pipe(fds) _pipe(fds,4096, _O_BINARY)
 #endif
 
 #include <unistd.h>
@@ -120,7 +119,7 @@ private:
 class Pipe {
 public:
     Pipe() {
-        if (pipe(fd) == -1)
+        if (pipeSyscall(fd) == -1)
             throw std::string("pipe creation fails.");
         readEnd.setFd(fd[0]);
         writeEnd.setFd(fd[1]);
@@ -138,6 +137,14 @@ private:
     int fd[2];
     PipeReader readEnd;
     PipeWriter writeEnd;
+
+    int pipeSyscall(int *fds) {
+#ifdef _WIN32
+        return _pipe(fds,4096, _O_BINARY);
+#else
+        return pipe(fds);
+#endif
+    }
 };
 
 

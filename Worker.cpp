@@ -1,18 +1,28 @@
 #include "Worker.hpp"
 
-
-void Worker::assignTask(Task *newTask) {
-    currentTask = newTask;
+void Worker::mainMethod() {
+    try {
+        while(true){
+            if(idle)
+                idleLoop();
+            else
+                runningLoop();
+        }
+    } catch (const StopRunning& stopTaskException) {
+        /*std::cerr << "exception caught: " << stopTaskException.what() << std::endl;*/
+        return;
+    }
 }
 
 void Worker::idleLoop() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));  /* TODO condvar*/
+    if (terminated)
+        throw StopRunning();
+
     if(currentTask){
         idle = false; /* Status changes to Running */
         return;
     }
-    else if (terminated)
-        throw StopTask();
 }
 
 void Worker::runningLoop() {
@@ -27,17 +37,17 @@ void Worker::runningLoop() {
     currentTask = nullptr;
 }
 
-void Worker::mainMethod() {
-    try {
-        while(true){
-            if(idle)
-                idleLoop();
-            else
-                runningLoop();
-        }
-    } catch (const StopTask& stopTaskException) {
-        /*std::cerr << "exception caught: " << stopTaskException.what() << std::endl;*/
-        return;
+Message *Worker::waitAndGetMessage() {
+    try{
+        Message *msg = pipe.reader().readOneMessage();
+        if(terminated)
+            throw StopRunning();
+        return msg;
+    } catch (const StopRunning& stopTaskException) {
+        throw; /* rethrow StopRunning */
+    } catch (const std::exception& ex) {
+        std::cerr<<"Exception at waitAndGetMessage: "<<ex.what()<<std::endl;
+        exit(1);
     }
 }
 
@@ -47,21 +57,5 @@ void Worker::terminate() { /* TODO: remove PipeWriter Parameter */
         char a = 'a';
         Message message(0, 1, &a);
         pipe.writer().writeOneMessage(message);
-    }
-    idle = true;
-//    currentTask = nullptr;
-}
-
-Message *Worker::waitAndGetMessage() {
-    try{
-        Message *msg = pipe.reader().readOneMessage();
-        if(terminated)
-            throw StopTask();
-        return msg;
-    } catch (const StopTask& stopTaskException) {
-        throw; /* rethrow StopTask */
-    } catch (const std::exception& ex) {
-        std::cerr<<"Exception at waitAndGetMessage: "<<ex.what()<<std::endl;
-        exit(1);
     }
 }
