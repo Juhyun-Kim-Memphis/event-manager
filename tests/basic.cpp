@@ -5,6 +5,10 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 #include "../Worker.hpp"
+#include "test_utils.hpp"
+
+/* TODO: move or remove all worker here. Worker testcases should go to tests/worker.cpp
+ * */
 
 class LockAcquireTask : public Task {
 public:
@@ -49,7 +53,10 @@ TEST(TaskAndEvent, testSuccessToAcquireLock) {
     LockAcquireTask task(worker.getPipeWriter(), vector<Lock*>({&lock}));
     worker.assignTask(&task);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    /* wait for the task to be done. */
+    WAIT_FOR_EQ(false, worker.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
+
     EXPECT_EQ(worker.getLockUser(), lock.getOwner());
     /* TODO: modify &pipe.writer() to task.getWorker or something other.. */
     EXPECT_EQ(true, lock.hasLocked());
@@ -64,6 +71,7 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     Lock::User dummyPlayer = &dummyPipe.writer();
     Lock lock;
 
+    /* testing thread(this thread) acquires the lock. */
     lock.acquire(dummyPlayer);
     EXPECT_EQ(true, lock.hasLocked());
     EXPECT_EQ(dummyPlayer, lock.getOwner());
@@ -72,7 +80,10 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     LockAcquireTask task(worker.getPipeWriter(), vector<Lock*>({&lock}));
     worker.assignTask(&task);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    /* wait for the task to be done. */
+    WAIT_FOR_EQ(false, worker.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
+
     EXPECT_EQ(true, lock.isInWaiters(worker.getLockUser()));
     EXPECT_EQ(vector<Lock *>(), task.getAcquiredLocks());
     EXPECT_EQ(vector<Lock *>({&lock}), task.getAwaitedLocks());
@@ -90,11 +101,17 @@ TEST(TaskAndEvent, testWaitMultipleLocks) {
     LockAcquireTask multiLockWaitTask(waiter.getPipeWriter(), targetLocks);
 
     lockOwner.assignTask(&acquireTask);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    /* wait for the lockOwner to be done. */
+    WAIT_FOR_EQ(false, lockOwner.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, lockOwner.isIdle()));
+
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
     waiter.assignTask(&multiLockWaitTask);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    /* wait for the waiter to be done. */
+    WAIT_FOR_EQ(false, waiter.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, waiter.isIdle()));
+
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
 
     lockOwner.cleanThread();
@@ -133,23 +150,27 @@ private:
     bool waiting;
 };
 
-TEST(TaskAndEvent, testEventWaitingTask) {
-    Lock lock;
-    Pipe pipeForTester;
-    Lock::User tester = &pipeForTester.writer();
-    lock.acquire(tester);
-
-    EXPECT_EQ(tester, lock.getOwner());
-
-    Worker worker;
-    LockWaitingTask task(worker.getPipeWriter(), lock);
-    worker.assignTask(&task);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    EXPECT_EQ(true, task.isWaiting());
-    lock.release();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    EXPECT_EQ(true, task.hasQuit());
-    worker.cleanThread();
-}
+/* TODO: remove this.
+ * handle과 start가 잘 호출되는지 확인하는 test는 worker에서 하고
+ * handle에서 적절하게 eventType으로 deserialize 및 event handler 호출하는 test는 추가 해야함.
+ * */
+//TEST(TaskAndEvent, testEventWaitingTask) {
+//    Lock lock;
+//    Pipe pipeForTester;
+//    Lock::User tester = &pipeForTester.writer();
+//    lock.acquire(tester);
+//
+//    EXPECT_EQ(tester, lock.getOwner());
+//
+//    Worker worker;
+//    LockWaitingTask task(worker.getPipeWriter(), lock);
+//    worker.assignTask(&task);
+//
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//    EXPECT_EQ(true, task.isWaiting());
+//    lock.release();
+//
+//    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//    EXPECT_EQ(true, task.hasQuit());
+//    worker.cleanThread();
+//}

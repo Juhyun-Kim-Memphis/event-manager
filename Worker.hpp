@@ -15,7 +15,10 @@ public:
     void mainMethod();
 
     void assignTask(Task *newTask){
-        currentTask = newTask;
+        if(idle)
+            currentTask = newTask;
+        else
+            throw TooBusy();
     }
 
     /* send a message to this worker */
@@ -27,7 +30,7 @@ public:
         return &getPipeWriter();
     }
 
-    bool isIdle() { return idle; }
+    const bool& isIdle() { return idle; }
 
     void cleanThread() {
         terminate();
@@ -36,11 +39,16 @@ public:
 
     class StopRunning : public std::exception {
     public:
-        const char* what() const noexcept {return "Stop The current task.\n";}
+        const char* what() const noexcept override {return "Worker stops the current task.\n";}
+    };
+
+    class TooBusy : public std::exception {
+    public:
+        const char* what() const noexcept override {return "Worker is already running a task.\n";}
     };
 
     /* for testing */
-    Task* getCurrentTask() { return currentTask; }
+    Task * const& getCurrentTask() { return currentTask; }
 
     PipeWriter &getPipeWriter(){ /* TODO: remove */
         return pipe.writer();

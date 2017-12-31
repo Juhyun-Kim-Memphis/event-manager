@@ -15,14 +15,16 @@ void Worker::mainMethod() {
 }
 
 void Worker::idleLoop() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));  /* TODO condvar*/
-    if (terminated)
+    if (terminated) {
         throw StopRunning();
+    }
 
     if(currentTask){
         idle = false; /* Status changes to Running */
         return;
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));  /* TODO condvar*/
 }
 
 void Worker::runningLoop() {
@@ -33,8 +35,8 @@ void Worker::runningLoop() {
         currentTask->handle(msg);
     }
 
-    idle = true; /* Status changes to Idle */
     currentTask = nullptr;
+    idle = true; /* Status changes to Idle */
 }
 
 Message *Worker::waitAndGetMessage() {

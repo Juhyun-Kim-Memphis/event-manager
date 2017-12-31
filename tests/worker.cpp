@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "../Worker.hpp"
-#include <chrono>
+#include "test_utils.hpp"
 
 TEST(Worker, testIdle) {
     Worker worker;
@@ -25,10 +25,18 @@ TEST(Worker, testPassTaskToWorker) {
     DummyTask task;
     worker.assignTask(&task);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
-
+    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle()));
     EXPECT_EQ(&task, worker.getCurrentTask());
-    EXPECT_FALSE(worker.isIdle());
+    worker.cleanThread();
+}
+
+TEST(Worker, testAssignTaskToRunningWorker) {
+    Worker worker;
+    DummyTask task;
+    worker.assignTask(&task);
+
+    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle())); /* need to wait until worker gets running. */
+    EXPECT_THROW(worker.assignTask(&task), Worker::TooBusy);
     worker.cleanThread();
 }
 
@@ -37,48 +45,32 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
     DummyTask task;
     worker.assignTask(&task);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
-
     Message dummyMsg = Message::makeDummyMessage();
     worker.sendMessage(dummyMsg);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); /* BUSY WAITING */
-
-    EXPECT_EQ(nullptr, worker.getCurrentTask());
-    EXPECT_TRUE(worker.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
+    EXPECT_TRUE(WAIT_FOR_EQ(nullptr, worker.getCurrentTask()));
     worker.cleanThread();
 }
 
 TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState) {
     Worker worker;
-    DummyTask task;
-    DummyTask anotherTask;
+    DummyTask task, anotherTask;
     worker.assignTask(&task);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
-
-    EXPECT_EQ(&task, worker.getCurrentTask());
 
     Message dummyMsg = Message::makeDummyMessage();
     worker.sendMessage(dummyMsg);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
-
-    EXPECT_EQ(nullptr, worker.getCurrentTask());
-    EXPECT_TRUE(worker.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
 
     worker.assignTask(&anotherTask);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
-
+    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle()));
     EXPECT_EQ(&anotherTask, worker.getCurrentTask());
 
     worker.sendMessage(dummyMsg);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); /* BUSY WAITING */
-
-    EXPECT_EQ(nullptr, worker.getCurrentTask());
-    EXPECT_TRUE(worker.isIdle());
+    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
 
     worker.cleanThread();
 }
