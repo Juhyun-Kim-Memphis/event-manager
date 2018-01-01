@@ -100,10 +100,10 @@ public:
     Message *readOneMessage() const {
         Message::Header header;
         read(readFd, &header, sizeof(Message::Header));
-        char *buf = (char *)malloc(header.length); //TODO: use streambuf or new
+        char *buf = (char *)malloc(header.length); //TODO: use streambuf or new.
         read(readFd, buf, header.length); //TODO: add Assertion.
         return new Message(header.type, header.length, buf);
-        /* TODO: use smart pointer */
+        /* TODO: use smart pointer, or delete buf */
     }
 
     ssize_t readBytes(void *buf, size_t len) const {
