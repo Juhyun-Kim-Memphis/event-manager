@@ -1,7 +1,11 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 
-
+template <typename E, typename T>
+void makeEventAndCallHandle(Message *msg, T &task){
+    E event = E::makeEvent(*msg);
+    task.handleEvent(&event);
+};
 
 class MultiEventHandlingTask : public Task {
 public:
@@ -14,6 +18,8 @@ public:
             int data = *(int *)msg.data;
             return EventAlpha(data);
         }
+        constexpr static int eventType(){ return 'a'; }
+
         int val;
     };
 
@@ -24,22 +30,28 @@ public:
             int data = *(int *)msg.data;
             return EventBeta(data);
         }
+        constexpr static int eventType(){ return 'b'; }
+
         int val;
     };
 
     void start() override {}
 
     void handle(Message *msg) override {
-        if(msg->getType() == 'a'){
-            EventAlpha event = EventAlpha::makeEvent(*msg);
-            handleEvent(&event);
+        switch (msg->getType()){
+            case (EventAlpha::eventType()):
+            {
+                makeEventAndCallHandle<EventAlpha>(msg, *this);
+                break;
+            }
+            case (EventBeta::eventType()):
+            {
+                makeEventAndCallHandle<EventBeta>(msg, *this);
+                break;
+            }
+            default:
+                throw std::string("no such event.");
         }
-        else if(msg->getType() == 'b'){
-            EventBeta event = EventBeta::makeEvent(*msg);
-            handleEvent(&event);
-        }
-        else
-            throw std::string("no such event.");
 
         if(alphaDone && betaDone)
             quit();
