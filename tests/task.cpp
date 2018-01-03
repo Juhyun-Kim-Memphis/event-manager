@@ -1,6 +1,13 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 
+struct EventAndHandler {
+    EventAndHandler(Event *event, const function<void()> &handle) : event(event), handle(handle) {}
+
+    Event *event;
+    std::function<void()> handle;
+};
+
 template <typename E, typename T>
 void makeEventAndCallHandle(Message *msg, T &task){
     E event = E::makeEvent(*msg);
@@ -18,6 +25,10 @@ public:
             int data = *(int *)msg.data;
             return EventAlpha(data);
         }
+        static EventAlpha* makeEventNew(const Message &msg){
+            int data = *(int *)msg.data;
+            return new EventAlpha(data);
+        }
         constexpr static int eventType(){ return 'a'; }
 
         int val;
@@ -30,6 +41,10 @@ public:
             int data = *(int *)msg.data;
             return EventBeta(data);
         }
+        static EventBeta* makeEventNew(const Message &msg){
+            int data = *(int *)msg.data;
+            return new EventBeta(data);
+        }
         constexpr static int eventType(){ return 'b'; }
 
         int val;
@@ -37,25 +52,7 @@ public:
 
     void start() override {}
 
-    void handle(Message *msg) override {
-        switch (msg->getType()){
-            case (EventAlpha::eventType()):
-            {
-                makeEventAndCallHandle<EventAlpha>(msg, *this);
-                break;
-            }
-            case (EventBeta::eventType()):
-            {
-                makeEventAndCallHandle<EventBeta>(msg, *this);
-                break;
-            }
-            default:
-                throw std::string("no such event.");
-        }
-
-        if(alphaDone && betaDone)
-            quit();
-    }
+    void handle(Message *msg) override;
 
     void handleEvent(EventAlpha *event){
         std::cout<<"EventAlpha: "<<event->val<<"\n";
@@ -67,10 +64,36 @@ public:
         betaDone = true;
     }
 
+    EventAndHandler eventFactory(Message *msg){
+        switch (msg->getType()) {
+            case (EventAlpha::eventType()): {
+                EventAlpha *event = EventAlpha::makeEventNew(*msg);
+                void (MultiEventHandlingTask::*fn)(EventAlpha *) = &MultiEventHandlingTask::handleEvent;
+                return EventAndHandler(event, std::bind(fn, this, event));
+            }
+            case (EventBeta::eventType()): {
+                EventBeta *event = EventBeta::makeEventNew(*msg);
+                void (MultiEventHandlingTask::*fn)(EventBeta *) = &MultiEventHandlingTask::handleEvent;
+                return EventAndHandler(event, std::bind(fn, this, event));
+            }
+            default:
+                throw std::string("no such event.");
+        }
+    }
+
 private:
     bool alphaDone;
     bool betaDone;
 };
+
+void MultiEventHandlingTask::handle(Message *msg) {
+    EventAndHandler eventAndHandler = eventFactory(msg);
+
+    eventAndHandler.handle();
+
+    if(alphaDone && betaDone)
+        quit();
+}
 
 TEST(TaskAndEvent, testHandle) {
     MultiEventHandlingTask task;

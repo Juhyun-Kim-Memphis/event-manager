@@ -2,6 +2,7 @@
 #define EVENT_MANAGER_TASK_HPP
 
 #include <unistd.h>
+#include <map>
 #include "Pipe.hpp"
 #include "Event.hpp"
 
