@@ -6,8 +6,12 @@
 #include "Pipe.hpp"
 #include "Event.hpp"
 
+struct EventAndHandler {
+    EventAndHandler(Event *event, const std::function<void()> &handle) : event(event), handle(handle) {}
 
-using namespace std;
+    Event *event;
+    std::function<void()> handle;
+};
 
 class Task {
 public:
@@ -20,7 +24,12 @@ public:
 
     virtual void start() = 0;
     virtual void handle(Message *msg) {
-        throw UnimplementedHandle();
+        if(eventMap.find(msg->getType()) == eventMap.end())
+            throw UnimplementedHandle();
+
+        EventAndHandler eventAndHandler = eventMap[msg->getType()](msg);
+
+        eventAndHandler.handle();
     };
     bool hasQuit();
 
@@ -28,12 +37,18 @@ public:
 
 protected:
     void quit();
+    void setFactoryAndHandlerFor(Event::EventType type, const std::function<EventAndHandler(Message *)> &FactoryAndHandler) {
+        eventMap[type] = FactoryAndHandler;
+    }
 
     enum State {
         INITIAL,
         TERMINATED
     };
     State state; //TODO: make TaskState class
+
+private:
+    std::map<Event::EventType, std::function<EventAndHandler(Message *)>> eventMap;
 };
 
 #endif //EVENT_MANAGER_TASK_HPP
