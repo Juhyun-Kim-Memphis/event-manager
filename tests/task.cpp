@@ -60,19 +60,22 @@ enum { ADD = 0, SUB = 1, DEFAULT = 2 };
 
 template <int Operation>
 struct interpreter {
-    static inline int run(const Message *msg, MultiEventHandlingTask *t);
+    template<typename T>
+    static inline int run(const Message *msg, T *t);
 };
 
 template <> struct interpreter<DEFAULT> {
     static const char *name() { return "Default"; }
-    static inline int run(const Message *, MultiEventHandlingTask *t) {
+    template<typename T>
+    static inline int run(const Message *, T *t) {
         throw std::string("no such event.");
     }
 };
 
 template <> struct interpreter<MultiEventHandlingTask::EventAlpha::eventType()> {
     static const char *name() { return "Alpha"; }
-    static inline int run(const Message *msg, MultiEventHandlingTask *t) {
+    template<typename T>
+    static inline int run(const Message *msg, T *t) {
         MultiEventHandlingTask::EventAlpha event = MultiEventHandlingTask::EventAlpha::makeEvent(*msg);
         t->handleEvent(&event);
         return 0;
@@ -81,7 +84,8 @@ template <> struct interpreter<MultiEventHandlingTask::EventAlpha::eventType()> 
 
 template <> struct interpreter<MultiEventHandlingTask::EventBeta::eventType()> {
     static const char *name() { return "Beta"; }
-    static inline int run(const Message *msg, MultiEventHandlingTask *t) {
+    template<typename T>
+    static inline int run(const Message *msg, T *t) {
         MultiEventHandlingTask::EventBeta event = MultiEventHandlingTask::EventBeta::makeEvent(*msg);
         t->handleEvent(&event);
         return 0;
