@@ -100,6 +100,14 @@ struct operation_table {
     }
 };
 
+void MultiEventHandlingTask::handle(Message *msg) {
+    metalevel::switch_table<0, 1, operation_table>::run<int>(msg->getType(), msg, this);
+
+    std::cout<<"alpha: "<<alphaDone<<", "<<"beta: "<<betaDone<<"\n";
+
+    if(alphaDone && betaDone)
+        quit();
+}
 
 TEST(TaskAndEvent, testHandle) {
     MultiEventHandlingTask task;
@@ -123,25 +131,4 @@ TEST(TaskAndEvent, testHandleThrowNoSuchEvent) {
     EXPECT_ANY_THROW(task.handle(&unpromisedMsg));
 }
 
-void MultiEventHandlingTask::handle(Message *msg) {
-    metalevel::switch_table<0, 1, operation_table>::run<int>(msg->getType(), msg, this);
-//        switch (msg->getType()){
-//            case (EventAlpha::eventType()):
-//            {
-//                makeEventAndCallHandle<EventAlpha>(msg, *this);
-//                break;
-//            }
-//            case (EventBeta::eventType()):
-//            {
-//                makeEventAndCallHandle<EventBeta>(msg, *this);
-//                break;
-//            }
-//            default:
-//                throw std::string("no such event.");
-//        }
 
-    std::cout<<"alpha: "<<alphaDone<<", "<<"beta: "<<betaDone<<"\n";
-
-    if(alphaDone && betaDone)
-        quit();
-}
