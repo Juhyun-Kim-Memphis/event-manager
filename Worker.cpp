@@ -33,7 +33,6 @@ void Worker::runningLoop() {
     while( !currentTask->hasQuit() ) {
         Message *msg = waitAndGetMessage();
         currentTask->handle(msg);
-        delete msg; /* TODO: remove. change waitAndGetMessage to return obj(via move) */
     }
 
     currentTask = nullptr;

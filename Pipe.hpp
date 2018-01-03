@@ -25,7 +25,7 @@ public:
     }
 
     ~Message() {
-        delete data;
+        delete[] data;
     }
 
     int getType(){ return header.type; }
