@@ -9,7 +9,7 @@
 struct EventAndHandler {
     EventAndHandler(Event *event, const std::function<void()> &handle) : event(event), handle(handle) {}
 
-    Event *event;
+    Event *event; /* TODO: check if this leaks. (should we use smart pointer?) */
     std::function<void()> handle;
 };
 
@@ -28,7 +28,7 @@ public:
             throw UnimplementedHandle();
 
         EventAndHandler eventAndHandler = eventMap[msg->getType()](msg);
-
+        /* TODO: eventQueue must shore this EventAndHandler here? */
         eventAndHandler.handle();
     };
     bool hasQuit();
@@ -47,7 +47,7 @@ protected:
             E *event = E::makeEventNew(*msg);
             void (T::*fn)(E *) = &T::handleEvent;
             return EventAndHandler(event, std::bind(fn, derivedTask, event));
-        });
+        }); /* TODO: how long the life cycle of this lambda is ? */
     }
 
     enum State {

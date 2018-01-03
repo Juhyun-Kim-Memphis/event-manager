@@ -8,6 +8,7 @@
  * But, I'm satisfied with l-value referenve for now
  * (Consider: class template using std::function<>)
  * */
+/* TODO: change l-value reference to std::fucntion to achieve lazy evaluation */
 template <typename T, typename W>
 bool WAIT_FOR_EQ(T expected, W& actual, int millisecondsToTimeout = 500){
     clock_t startTime = clock();
