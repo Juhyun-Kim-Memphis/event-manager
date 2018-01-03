@@ -41,6 +41,11 @@ public:
         int val;
     };
 
+    MultiEventHandlingTask() : alphaDone(false), betaDone(false) {
+        setFactoryAndHandlerForEventType<EventAlpha>(this);
+        setFactoryAndHandlerForEventType<EventBeta>(this);
+    }
+
     void start() override {}
 
     void handleEvent(EventAlpha *event){
@@ -51,19 +56,6 @@ public:
     void handleEvent(EventBeta *event){
         std::cout<<"EventBeta: "<<event->val<<"\n";
         betaDone = true;
-    }
-
-    MultiEventHandlingTask() : alphaDone(false), betaDone(false) {
-        setFactoryAndHandlerFor(EventAlpha::eventType(), [this](Message *msg){
-            EventAlpha *event = EventAlpha::makeEventNew(*msg);
-            void (MultiEventHandlingTask::*fn)(EventAlpha *) = &MultiEventHandlingTask::handleEvent;
-            return EventAndHandler(event, std::bind(fn, this, event));
-        });
-        setFactoryAndHandlerFor(EventBeta::eventType(), [this](Message *msg){
-            EventBeta *event = EventBeta::makeEventNew(*msg);
-            void (MultiEventHandlingTask::*fn)(EventBeta *) = &MultiEventHandlingTask::handleEvent;
-            return EventAndHandler(event, std::bind(fn, this, event));
-        });
     }
 
     void handle(Message *msg) override {

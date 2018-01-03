@@ -41,6 +41,15 @@ protected:
         eventMap[type] = FactoryAndHandler;
     }
 
+    template<typename E, typename T>
+    void setFactoryAndHandlerForEventType(T *derivedTask){
+        setFactoryAndHandlerFor(E::eventType(), [derivedTask](Message *msg){
+            E *event = E::makeEventNew(*msg);
+            void (T::*fn)(E *) = &T::handleEvent;
+            return EventAndHandler(event, std::bind(fn, derivedTask, event));
+        });
+    }
+
     enum State {
         INITIAL,
         TERMINATED
