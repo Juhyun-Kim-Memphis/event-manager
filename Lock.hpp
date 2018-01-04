@@ -13,6 +13,7 @@
 #endif
 /**
  * TODO: Move all of the actual implementations to cpp.
+ * TODO: allocate id, waiter list and owner info to shared memory.
  */
 using namespace std;
 
