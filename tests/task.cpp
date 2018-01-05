@@ -49,12 +49,12 @@ public:
     void start() override {}
 
     void handleEvent(EventAlpha *event){
-        std::cout<<"EventAlpha: "<<event->val<<"\n";
+        std::cout<<"EventAlpha: "<<event->val<<".\n";
         alphaDone = true;
     }
 
     void handleEvent(EventBeta *event){
-        std::cout<<"EventBeta: "<<event->val<<"\n";
+        std::cout<<"EventBeta: "<<event->val<<".\n";
         betaDone = true;
     }
 
