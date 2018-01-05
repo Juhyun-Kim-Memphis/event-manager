@@ -1,46 +1,40 @@
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 
-template <typename E, typename T>
-void makeEventAndCallHandle(Message *msg, T &task){
-    E event = E::makeEvent(*msg);
-    task.handleEvent(&event);
+class EventAlpha : public Event {
+public:
+    EventAlpha(int val) : Event('a'), val(val) {}
+    static EventAlpha makeEvent(const Message &msg){
+        int data = *(int *)msg.data;
+        return EventAlpha(data);
+    }
+    static EventAlpha* makeEventNew(const Message &msg){
+        int data = *(int *)msg.data;
+        return new EventAlpha(data);
+    }
+    constexpr static int eventType(){ return 'a'; }
+
+    int val;
+};
+
+class EventBeta : public Event {
+public:
+    EventBeta(int val) : Event('b'), val(val) {}
+    static EventBeta makeEvent(const Message &msg){
+        int data = *(int *)msg.data;
+        return EventBeta(data);
+    }
+    static EventBeta* makeEventNew(const Message &msg){
+        int data = *(int *)msg.data;
+        return new EventBeta(data);
+    }
+    constexpr static int eventType(){ return 'b'; }
+
+    int val;
 };
 
 class MultiEventHandlingTask : public Task {
 public:
-    class EventAlpha : public Event {
-    public:
-        EventAlpha(int val) : Event('a'), val(val) {}
-        static EventAlpha makeEvent(const Message &msg){
-            int data = *(int *)msg.data;
-            return EventAlpha(data);
-        }
-        static EventAlpha* makeEventNew(const Message &msg){
-            int data = *(int *)msg.data;
-            return new EventAlpha(data);
-        }
-        constexpr static int eventType(){ return 'a'; }
-
-        int val;
-    };
-
-    class EventBeta : public Event {
-    public:
-        EventBeta(int val) : Event('b'), val(val) {}
-        static EventBeta makeEvent(const Message &msg){
-            int data = *(int *)msg.data;
-            return EventBeta(data);
-        }
-        static EventBeta* makeEventNew(const Message &msg){
-            int data = *(int *)msg.data;
-            return new EventBeta(data);
-        }
-        constexpr static int eventType(){ return 'b'; }
-
-        int val;
-    };
-
     MultiEventHandlingTask() : alphaDone(false), betaDone(false) {
         setFactoryAndHandlerForEventType<EventAlpha>(this);
         setFactoryAndHandlerForEventType<EventBeta>(this);

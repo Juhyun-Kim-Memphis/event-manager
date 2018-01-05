@@ -25,7 +25,7 @@ TEST(Worker, testPassTaskToWorker) {
     DummyTask task;
     worker.assignTask(&task);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle()));
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker)));
     EXPECT_EQ(&task, worker.getCurrentTask());
     worker.cleanThread();
 }
@@ -35,7 +35,7 @@ TEST(Worker, testAssignTaskToRunningWorker) {
     DummyTask task;
     worker.assignTask(&task);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle())); /* need to wait until worker gets running. */
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker))); /* need to wait until worker gets running. */
     EXPECT_THROW(worker.assignTask(&task), Worker::TooBusy);
     worker.cleanThread();
 }
@@ -48,8 +48,8 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
     Message dummyMsg = Message::makeDummyMessage();
     worker.sendMessage(dummyMsg);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
-    EXPECT_TRUE(WAIT_FOR_EQ(nullptr, worker.getCurrentTask()));
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
+    EXPECT_TRUE(WAIT_FOR_EQ<Task *>(nullptr, std::bind(&Worker::getCurrentTask, &worker)));
     worker.cleanThread();
 }
 
@@ -61,16 +61,16 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState
     Message dummyMsg = Message::makeDummyMessage();
     worker.sendMessage(dummyMsg);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
 
     worker.assignTask(&anotherTask);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(false, worker.isIdle()));
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker)));
     EXPECT_EQ(&anotherTask, worker.getCurrentTask());
 
     worker.sendMessage(dummyMsg);
 
-    EXPECT_TRUE(WAIT_FOR_EQ(true, worker.isIdle()));
+    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
 
     worker.cleanThread();
 }
