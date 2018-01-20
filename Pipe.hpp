@@ -58,19 +58,20 @@ public:
         return os;
     }
 
-    static Message makeDummyMessage() {
-        char dummyChar = '\0';
-        return Message(0,1, &dummyChar);
+    static Message makeDummyMessage(ID id = 0) {
+        return Message(id);
     }
 
 public:
     Header header;
     char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
+
+    /* header only message */
+    Message(uint32_t type) : header(type, 0), data(nullptr) {}
 };
 
 class PipeWriter {
 public:
-    PipeWriter(int writeFd) : writeFd(writeFd) {}
     PipeWriter() {}
 
     void setFd(int fd) { writeFd = fd; } /* TODO: remove this. */
@@ -81,6 +82,7 @@ public:
         delete sendBuffer;
     }
 
+    /*TODO: remove */
     ssize_t writeBytes(const void *data, size_t len) const{
         return write(writeFd, data, len);
     }
@@ -95,7 +97,6 @@ private:
 
 class PipeReader {
 public:
-    PipeReader(int readFd) : readFd(readFd) {}
     PipeReader() {}
     void setFd(int fd) { readFd = fd; }
 

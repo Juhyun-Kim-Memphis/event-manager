@@ -43,7 +43,7 @@ public:
     void start() override {}
 
     void handleEvent(EventAlpha *event){
-        std::cout<<"EventAlpha: "<<event->val<<".\n";
+        // std::cout<<"EventAlpha: "<<event->val<<".\n";
         alphaDone = true;
     }
 

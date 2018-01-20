@@ -9,17 +9,16 @@
 
 class Worker {
 public:
-    //TODO: Dynamic task assignment for workers - at the moment ,
     Worker() : pipe(), currentTask(nullptr), idle(true),
                workerThread(std::thread(&Worker::mainMethod, this)) {}
-    ~Worker();
+    virtual ~Worker();
 
     void mainMethod();
 
     void assignTask(Task *newTask) {
         if(isIdle()) {
-            /* TODO: avoid casting of newTask */
-            Message taskAddressMessage(NEW_TASK_MESSAGE_ID, sizeof(Task *), (char *)&newTask);
+            /* TODO: how to avoid casting of newTask */
+            Message taskAddressMessage(NEW_TASK_MESSAGE_ID, sizeof(Task *), reinterpret_cast<char *>(&newTask));
             sendMessage(taskAddressMessage);
         }
         else
@@ -53,11 +52,9 @@ public:
         const char* what() const noexcept override {return "Worker is already running a task.\n";}
     };
 
-    class DeleteNotJoinedThread : public std::exception {
-        const char* what() const noexcept override {return "Worker is deleted without calling cleanThread.\n";}
-    };
-
-    /* for testing */
+    /* for testing
+     * TODO: remove (cthr should send query for status and currentTask of worker. or have its own status data for all wthrs. )
+     * */
     Task *getCurrentTask() {
         std::lock_guard<std::mutex> guard(stateLock);
         return currentTask;
@@ -83,11 +80,10 @@ private:
     Pipe pipe;
 
     std::mutex stateLock;
-    Task *currentTask; /* TODO: remove */
+    Task *currentTask; /* TODO: remove (move to Running status) */
     bool idle;
 
     void setToIdleStatus();
-
     void setToRunningStatus(Task *newTask);
 };
 

@@ -5,17 +5,25 @@
 TEST(Worker, testIdle) {
     Worker worker;
     EXPECT_EQ(true, worker.isIdle());
-    worker.cleanThread();
+}
+
+TEST(Worker, testWorkerDeletion) {
+    auto createWorker = [](){
+        Worker worker;
+    };
+    /* worker destructor will be called. */
+    EXPECT_NO_THROW(createWorker());
 }
 
 class DummyTask : public Task {
 public:
     DummyTask() {}
     void start() override {
-        /* DO NOTHING */
+        /* DO NOTHING. */
     }
 
     void handle(Message *msg) override {
+        /* this task finishes when receiving a message.  */
         quit();
     }
 };
@@ -37,7 +45,6 @@ TEST(Worker, testAssignTaskToRunningWorker) {
 
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker))); /* need to wait until worker gets running. */
     EXPECT_THROW(worker.assignTask(&task), Worker::TooBusy);
-    worker.cleanThread();
 }
 
 TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
@@ -50,6 +57,7 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
 
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
     EXPECT_TRUE(WAIT_FOR_EQ<Task *>(nullptr, std::bind(&Worker::getCurrentTask, &worker)));
+    EXPECT_EQ(nullptr, worker.getCurrentTask());
     worker.cleanThread();
 }
 

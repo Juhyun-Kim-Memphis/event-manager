@@ -21,7 +21,7 @@ void Worker::idleLoop() {
     if ( newTaskMessage->getType() == TERMINATE_WORKER ){
         throw StopRunning();
     } else if( newTaskMessage->getType() == NEW_TASK_MESSAGE_ID ) {
-        Task *newTask = *(Task **)(newTaskMessage->data); /* TODO: remove cast. just send empty msg! */
+        Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->data)); /* TODO: remove cast. just send empty msg! */
         setToRunningStatus(newTask);
     } else {
         throw StopRunning();
@@ -73,8 +73,6 @@ void Worker::terminate() { /* TODO: remove PipeWriter Parameter */
 }
 
 Worker::~Worker() {
-    if(workerThread.joinable()){
+    if(workerThread.joinable())
         cleanThread();
-        // throw DeleteNotJoinedThread();
-    }
 }

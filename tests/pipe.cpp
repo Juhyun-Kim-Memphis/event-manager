@@ -2,6 +2,32 @@
 #include <boost/serialization/vector.hpp>
 #include "../Pipe.hpp"
 
+
+TEST(Pipe, testMessage) {
+    Pipe pipe;
+    char bytes[43] = "hello. this is sample string. length is 42";
+    Message msg(777, 43, bytes);
+
+    pipe.writer().writeOneMessage(msg);
+    Message *receivedMsg = pipe.reader().readOneMessage();
+    EXPECT_EQ(777, receivedMsg->header.type);
+    EXPECT_EQ(43, receivedMsg->header.length);
+    EXPECT_EQ(0, memcmp(bytes, receivedMsg->data, 43));
+    delete receivedMsg;
+}
+
+
+TEST(Pipe, testHeaderOnlyMessage) {
+    Pipe pipe;
+    Message msg = Message::makeDummyMessage(342);
+    pipe.writer().writeOneMessage(msg);
+    Message *receivedMsg = pipe.reader().readOneMessage();
+
+    EXPECT_EQ(342, receivedMsg->header.type);
+    EXPECT_EQ(0, receivedMsg->header.length);
+    delete receivedMsg;
+}
+
 class EventA : public Event {
 public:
     EventA(const std::vector<int> &intli) : Event('A'), intli(intli){}
@@ -49,27 +75,6 @@ public:
     /* TODO: class object, ptr to derived class */
 };
 
-TEST(Pipe, testPipeReaderWriter) {
-    Pipe pipe;
-    EventA eventA({4, 5});
-
-    PipeWriter &pipeWriter = pipe.writer();
-    pipeWriter.writeOneMessage(eventA.makeMessage());
-
-    PipeReader &pipeReader = pipe.reader();
-    Message *receivedMsg = pipeReader.readOneMessage();
-    EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);
-
-    EXPECT_EQ(eventA, *receivedEvent);
-
-    delete receivedEvent;
-    delete receivedMsg;
-}
-
-/*
- * TODO:: add fork test and pipeEnd close test.
- * */
-
 TEST(Pipe, testDerivedEventWriteAndRead) {
     EventA eventA({4, 5});
 
@@ -84,6 +89,10 @@ TEST(Pipe, testDerivedEventWriteAndRead) {
     delete receivedEvent;
     delete receivedMsg;
 }
+
+/*
+ * TODO:: add fork test and pipeEnd close test.
+ * */
 
 /* TODO: Message only have unique_ptr<stringbuf> (to avoid copy)
  * in this case, stringbuf already contains type, len (8byte) in front of byte array.
