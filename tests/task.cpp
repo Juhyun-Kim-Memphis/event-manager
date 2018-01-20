@@ -48,7 +48,7 @@ public:
     }
 
     void handleEvent(EventBeta *event){
-        std::cout<<"EventBeta: "<<event->val<<".\n";
+        // std::cout<<"EventBeta: "<<event->val<<".\n";
         betaDone = true;
     }
 

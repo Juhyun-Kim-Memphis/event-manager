@@ -3,7 +3,7 @@
 void Worker::mainMethod() {
     try {
         while(true){
-            if(idle)
+            if(isIdle())
                 idleLoop();
             else
                 runningLoop();
@@ -15,16 +15,18 @@ void Worker::mainMethod() {
 }
 
 void Worker::idleLoop() {
-    if (terminated) {
+    Message *rawPtr = pipe.reader().readOneMessage();
+    std::unique_ptr<Message> newTaskMessage(rawPtr);
+
+    if ( newTaskMessage->getType() == TERMINATE_WORKER ){
+        throw StopRunning();
+    } else if( newTaskMessage->getType() == NEW_TASK_MESSAGE_ID ) {
+        Task *newTask = *(Task **)(newTaskMessage->data); /* TODO: remove cast. just send empty msg! */
+        setToRunningStatus(newTask);
+    } else {
         throw StopRunning();
     }
 
-    if(currentTask){
-        idle = false; /* Status changes to Running */
-        return;
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));  /* TODO condvar*/
 }
 
 void Worker::runningLoop() {
@@ -35,15 +37,14 @@ void Worker::runningLoop() {
         currentTask->handle(msg);
     }
 
-    currentTask = nullptr;
-    idle = true; /* Status changes to Idle */
+    setToIdleStatus();
 }
 
 Message *Worker::waitAndGetMessage() {
     try{
         Message *msg = pipe.reader().readOneMessage();
-        if(terminated)
-            throw StopRunning();
+        if(msg->getType() == TERMINATE_WORKER)
+            throw StopRunning(); /* TODO: delete msg */
         return msg;
     } catch (const StopRunning& stopTaskException) {
         throw; /* rethrow StopRunning */
@@ -53,11 +54,26 @@ Message *Worker::waitAndGetMessage() {
     }
 }
 
+void Worker::setToIdleStatus() {
+    std::lock_guard<std::mutex> guard(stateLock);
+    currentTask = nullptr;
+    idle = true; /* Status changes to Idle */
+}
+
+void Worker::setToRunningStatus(Task *newTask) {
+    std::lock_guard<std::mutex> guard(stateLock);
+    currentTask = newTask;
+    idle = false;
+}
+
 void Worker::terminate() { /* TODO: remove PipeWriter Parameter */
-    terminated = true;
-    if(!idle){
-        char a = 'a';
-        Message message(0, 1, &a);
-        pipe.writer().writeOneMessage(message);
+    Message terminateMessage(TERMINATE_WORKER, 0, nullptr);
+    sendMessage(terminateMessage);
+}
+
+Worker::~Worker() {
+    if(workerThread.joinable()){
+        cleanThread();
+        // throw DeleteNotJoinedThread();
     }
 }

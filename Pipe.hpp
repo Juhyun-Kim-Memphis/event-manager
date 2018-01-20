@@ -13,6 +13,8 @@
 /* can be event or task */
 class Message {
 public:
+    using ID = uint32_t;
+
     struct Header {
         Header() {}
         Header(uint32_t type, uint32_t length) : type(type), length(length) {}

@@ -4,9 +4,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-/*
- * TODO: issue unique EventType (id) at compile time by reading Event (via external file or something.)
- * */
 class Event {
 public:
     typedef int EventType;

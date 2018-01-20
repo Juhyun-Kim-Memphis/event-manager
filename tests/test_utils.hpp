@@ -10,7 +10,6 @@ template<typename T>
 bool WAIT_FOR_EQ(T expected, const std::function<T()> &actual, int millisecondsToTimeout = 500){
     clock_t startTime = clock();
     constexpr int CLOCKS_PER_MILLISEC = CLOCKS_PER_SEC / 1000;
-
     while(expected != actual()){
         int millisecsPassed = (clock() - startTime) / CLOCKS_PER_MILLISEC;
         if( millisecsPassed >= millisecondsToTimeout)

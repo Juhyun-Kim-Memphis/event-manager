@@ -66,6 +66,10 @@ TEST(Worker, testPassTaskToWorkerAndBackToIdleStateAndPassTaskAndBackToIdleState
     worker.assignTask(&anotherTask);
 
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker)));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+    /* TODO: how to remove sleep? getCurrentTask gives task, not  anotherTask.. (use atomic?) */
     EXPECT_EQ(&anotherTask, worker.getCurrentTask());
 
     worker.sendMessage(dummyMsg);
