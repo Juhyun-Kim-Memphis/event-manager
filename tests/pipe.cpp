@@ -28,6 +28,20 @@ TEST(Pipe, testHeaderOnlyMessage) {
     delete receivedMsg;
 }
 
+TEST(Pipe, testSendingAddress) {
+    Pipe pipe;
+    int *data = new int;
+    *data = 777;
+
+    Message msg(0, sizeof(int *), reinterpret_cast<char *>(&data));
+    pipe.writer().writeOneMessage(msg);
+    Message *receivedMsg = pipe.reader().readOneMessage();
+    int *receiveData = *(reinterpret_cast<int **>(receivedMsg->data));
+
+    EXPECT_EQ(data, receiveData);
+    delete receivedMsg;
+}
+
 class EventA : public Event {
 public:
     EventA(const std::vector<int> &intli) : Event('A'), intli(intli){}

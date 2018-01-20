@@ -76,3 +76,17 @@ TEST(TaskAndEvent, testHandle) {
 
     EXPECT_EQ(true, task.hasQuit());
 }
+
+TEST(TaskAndEvent, testHandle) {
+    MultiEventHandlingTask task;
+
+    int alpha = 777;
+    Message msgAlpha('a', 4, (char *)&alpha);
+    task.handle(&msgAlpha);
+
+    int beta = 333;
+    Message msgBeta('b', 4, (char *)&beta);
+    task.handle(&msgBeta);
+
+    EXPECT_EQ(true, task.hasQuit());
+}
