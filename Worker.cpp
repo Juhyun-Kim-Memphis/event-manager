@@ -56,6 +56,7 @@ Message *Worker::waitAndGetMessage() {
 
 void Worker::setToIdleStatus() {
     std::lock_guard<std::mutex> guard(stateLock);
+    /*TODO: make this two store ordered perfectly. (i.e. currentTask is NULL if idle == true) */
     currentTask = nullptr;
     idle = true; /* Status changes to Idle */
 }
