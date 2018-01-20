@@ -10,7 +10,9 @@
 class Worker {
 public:
     Worker() : pipe(), currentTask(nullptr), idle(true),
-               workerThread(std::thread(&Worker::mainMethod, this)) {}
+               workerThread(std::thread(&Worker::mainMethod, this)) {
+
+    }
     virtual ~Worker();
 
     void mainMethod();
@@ -36,7 +38,7 @@ public:
 
     bool isIdle() {
         std::lock_guard<std::mutex> guard(stateLock);
-        return idle;
+        return idle.load();
     }
 
     void cleanThread() {
@@ -81,7 +83,7 @@ private:
 
     std::mutex stateLock;
     Task *currentTask; /* TODO: remove (move to Running status) */
-    bool idle;
+    std::atomic<bool> idle;
 
     void setToIdleStatus();
     void setToRunningStatus(Task *newTask);

@@ -75,7 +75,7 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     worker.assignTask(&task);
 
     /* wait for the task to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker));
+    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker), 5);
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
 
     EXPECT_EQ(true, lock.isInWaiters(worker.getLockUser()));
@@ -96,14 +96,14 @@ TEST(TaskAndEvent, testWaitMultipleLocks) {
 
     lockOwner.assignTask(&acquireTask);
     /* wait for the lockOwner to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &lockOwner));
+    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &lockOwner), 5);
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &lockOwner)));
 
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
     waiter.assignTask(&multiLockWaitTask);
     /* wait for the waiter to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &waiter));
+    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &waiter), 5);
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &waiter)));
 
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
