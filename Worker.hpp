@@ -30,7 +30,7 @@ public:
         return &getPipeWriter();
     }
 
-    const bool& isIdle() { return idle; }
+    bool isIdle() const { return idle; }
 
     void cleanThread() {
         terminate();
@@ -48,13 +48,16 @@ public:
     };
 
     /* for testing */
-    Task * const& getCurrentTask() { return currentTask; }
+    Task *getCurrentTask() const { return currentTask; }
 
     PipeWriter &getPipeWriter(){ /* TODO: remove */
         return pipe.writer();
     }
 
 private:
+    Worker(const Worker& w) = delete;
+    Worker(Worker&& w) = delete;
+
     void idleLoop();
     void runningLoop();
     Message *waitAndGetMessage(); /* TODO: make return type to unique_ptr */
