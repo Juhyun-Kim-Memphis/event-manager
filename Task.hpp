@@ -15,9 +15,9 @@ struct EventAndHandler {
 
 class Task {
 public:
-    class UnimplementedHandle : public std::exception {
+    class NotImplementedHandle : public std::exception {
     public:
-        const char* what() const noexcept {return "UnimplementedHandle!\n";}
+        const char* what() const noexcept {return "NotImplementedHandle!\n";}
     };
 
     Task() :  state(INITIAL) {}
@@ -25,7 +25,7 @@ public:
     virtual void start() = 0;
     virtual void handle(Message *msg) {
         if(eventMap.find(msg->getType()) == eventMap.end())
-            throw UnimplementedHandle();
+            throw NotImplementedHandle();
 
         EventAndHandler eventAndHandler = eventMap[msg->getType()](msg);
         /* TODO: eventQueue must shore this EventAndHandler here? */

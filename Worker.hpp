@@ -10,14 +10,15 @@
 class Worker {
 public:
     Worker() : pipe(), currentTask(nullptr), idle(true),
-               workerThread(std::thread(&Worker::mainMethod, this)) {
-
+               workerThread() {
+        workerThread = std::thread(&Worker::mainMethod, this);
     }
     virtual ~Worker();
 
     void mainMethod();
 
     void assignTask(Task *newTask) {
+        /* TODO: remove isIdle query by making CTHR. make isIdle private and remove statusLock */
         if(isIdle()) {
             /* TODO: how to avoid casting of newTask */
             Message taskAddressMessage(NEW_TASK_MESSAGE_ID, sizeof(Task *), reinterpret_cast<char *>(&newTask));
@@ -36,8 +37,8 @@ public:
         return &getPipeWriter();
     }
 
-    bool isIdle() {
-        std::lock_guard<std::mutex> guard(stateLock);
+    bool isIdle() const {
+        // std::lock_guard<std::mutex> guard(stateLock);
         return idle.load();
     }
 

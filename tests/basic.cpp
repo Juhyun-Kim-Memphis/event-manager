@@ -41,13 +41,17 @@ public:
         return acquiredLocks;
     }
 
+    void handle(Message *msg) override {
+        throw NotImplementedHandle();
+    }
+
 private:
     const vector<Lock*> requiredLocks;
     vector<Lock*> acquiredLocks;
     PipeWriter &lockUser;
 };
 
-TEST(TaskAndEvent, testSuccessToAcquireLock) {
+TEST(Task, testSuccessToAcquireLock) {
     Lock lock;
     Pipe pipe;
     LockAcquireTask task(pipe.writer(), vector<Lock*>({&lock}));
@@ -60,7 +64,7 @@ TEST(TaskAndEvent, testSuccessToAcquireLock) {
     EXPECT_EQ(vector<Lock *>(), task.getAwaitedLocks());
 }
 
-TEST(TaskAndEvent, testFailToAcquireLock) {
+TEST(Task, testFailToAcquireLock) {
     Pipe dummyPipe;
     Lock::User dummyPlayer = &dummyPipe.writer();
     Lock lock;
@@ -70,44 +74,30 @@ TEST(TaskAndEvent, testFailToAcquireLock) {
     EXPECT_EQ(true, lock.hasLocked());
     EXPECT_EQ(dummyPlayer, lock.getOwner());
 
-    Worker worker;
-    LockAcquireTask task(worker.getPipeWriter(), vector<Lock*>({&lock}));
-    worker.assignTask(&task);
+    Pipe pipeForTask;
+    LockAcquireTask task(pipeForTask.writer(), vector<Lock*>({&lock}));
+    Lock::User taskRunner = &pipeForTask.writer();
+    task.start();
 
-    /* wait for the task to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker), 5);
-    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &worker)));
-
-    EXPECT_EQ(true, lock.isInWaiters(worker.getLockUser()));
+    EXPECT_EQ(true, lock.isInWaiters(taskRunner));
     EXPECT_EQ(vector<Lock *>(), task.getAcquiredLocks());
     EXPECT_EQ(vector<Lock *>({&lock}), task.getAwaitedLocks());
-
-    worker.cleanThread();
 }
 
-TEST(TaskAndEvent, testWaitMultipleLocks) {
+TEST(Task, testWaitMultipleLocks) {
     Lock lockA, lockB;
-    Worker lockOwner;
-    Worker waiter;
+    Pipe pipeForOwner;
+    Pipe pipeForWaiter;
 
     vector<Lock*> targetLocks({&lockA, &lockB});
-    LockAcquireTask acquireTask(lockOwner.getPipeWriter(), targetLocks);
-    LockAcquireTask multiLockWaitTask(waiter.getPipeWriter(), targetLocks);
+    LockAcquireTask acquireTask(pipeForOwner.writer(), targetLocks);
+    LockAcquireTask multiLockWaitTask(pipeForWaiter.writer(), targetLocks);
 
-    lockOwner.assignTask(&acquireTask);
-    /* wait for the lockOwner to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &lockOwner), 5);
-    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &lockOwner)));
+    acquireTask.start();
 
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), acquireTask.getAcquiredLocks());
 
-    waiter.assignTask(&multiLockWaitTask);
-    /* wait for the waiter to be done. */
-    WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &waiter), 5);
-    EXPECT_TRUE(WAIT_FOR_EQ<bool>(true, std::bind(&Worker::isIdle, &waiter)));
+    multiLockWaitTask.start();
 
     EXPECT_EQ(vector<Lock*>({&lockA, &lockB}), multiLockWaitTask.getAwaitedLocks());
-
-    lockOwner.cleanThread();
-    waiter.cleanThread();
 }

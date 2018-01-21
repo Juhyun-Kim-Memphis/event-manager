@@ -63,7 +63,7 @@ private:
     bool betaDone;
 };
 
-TEST(TaskAndEvent, testHandle) {
+TEST(Task, testHandle) {
     MultiEventHandlingTask task;
 
     int alpha = 777;

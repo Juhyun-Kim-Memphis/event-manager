@@ -5,6 +5,7 @@
 TEST(Worker, testIdle) {
     Worker worker;
     EXPECT_EQ(true, worker.isIdle());
+    worker.cleanThread();
 }
 
 TEST(Worker, testWorkerDeletion) {
@@ -45,6 +46,7 @@ TEST(Worker, testAssignTaskToRunningWorker) {
 
     EXPECT_TRUE(WAIT_FOR_EQ<bool>(false, std::bind(&Worker::isIdle, &worker))); /* need to wait until worker gets running. */
     EXPECT_THROW(worker.assignTask(&task), Worker::TooBusy);
+    worker.cleanThread();
 }
 
 TEST(Worker, testPassTaskToWorkerAndBackToIdleState) {
