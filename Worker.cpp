@@ -20,7 +20,7 @@ void Worker::idleLoop() {
 
     if ( newTaskMessage->getType() == TERMINATE_WORKER ){
         throw StopRunning();
-    } else if( newTaskMessage->getType() == NEW_TASK_MESSAGE_ID ) {
+    } else if( newTaskMessage->getType() == NEW_TASK ) {
         Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->data)); /* TODO: remove cast. just send empty msg! */
         setToRunningStatus(newTask);
     } else {
@@ -52,6 +52,18 @@ Message *Worker::waitAndGetMessage() {
         std::cerr<<"Exception at waitAndGetMessage: "<<ex.what()<<std::endl;
         exit(1);
     }
+}
+
+/* Control thread may call this method. */
+void Worker::assignTask(Task *newTask) {
+    /* TODO: remove isIdle query by making CTHR. make isIdle private and remove statusLock */
+    if(isIdle()) {
+        /* TODO: how to avoid casting of newTask */
+        Message taskAddressMessage(NEW_TASK, sizeof(Task *), reinterpret_cast<char *>(&newTask));
+        sendMessage(taskAddressMessage);
+    }
+    else
+        throw TooBusy();
 }
 
 void Worker::setToIdleStatus() {

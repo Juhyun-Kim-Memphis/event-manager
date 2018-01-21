@@ -6,6 +6,7 @@
 #include "Task.hpp"
 #include "Event.hpp"
 #include "Lock.hpp"
+#include "MessageList.hpp"
 
 class Worker {
 public:
@@ -13,20 +14,12 @@ public:
                workerThread() {
         workerThread = std::thread(&Worker::mainMethod, this);
     }
+
     virtual ~Worker();
 
     void mainMethod();
 
-    void assignTask(Task *newTask) {
-        /* TODO: remove isIdle query by making CTHR. make isIdle private and remove statusLock */
-        if(isIdle()) {
-            /* TODO: how to avoid casting of newTask */
-            Message taskAddressMessage(NEW_TASK_MESSAGE_ID, sizeof(Task *), reinterpret_cast<char *>(&newTask));
-            sendMessage(taskAddressMessage);
-        }
-        else
-            throw TooBusy();
-    }
+    void assignTask(Task *newTask);
 
     /* send a message to this worker */
     void sendMessage(const Message& msg) {
@@ -37,6 +30,7 @@ public:
         return &getPipeWriter();
     }
 
+    /* TODO remove */
     bool isIdle() const {
         // std::lock_guard<std::mutex> guard(stateLock);
         return idle.load();
@@ -71,8 +65,8 @@ private:
     Worker(const Worker& w) = delete;
     Worker(Worker&& w) = delete;
 
-    static constexpr Message::ID NEW_TASK_MESSAGE_ID = 0; /* TODO: define proper Message ID */
-    static constexpr Message::ID TERMINATE_WORKER = 1;
+    static constexpr Message::ID NEW_TASK = GlobalUnique::NEW_TASK; /* TODO: define proper Message ID */
+    static constexpr Message::ID TERMINATE_WORKER = GlobalUnique::TERMINATE_WORKER;
 
     void idleLoop();
     void runningLoop();

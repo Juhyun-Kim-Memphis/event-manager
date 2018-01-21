@@ -7,6 +7,7 @@
 class Event {
 public:
     typedef int EventType;
+    using Priority = uint32_t;
 
     Event(EventType t) : type(t) {}
 
@@ -29,6 +30,8 @@ public:
 
 private:
     EventType type;
+    Priority priority;
+
     /* TODO: can we remove this? redundant information.. */
 };
 
