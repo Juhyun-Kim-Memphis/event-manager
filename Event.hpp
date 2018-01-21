@@ -29,10 +29,9 @@ public:
     }
 
 private:
-    EventType type;
-    Priority priority;
-
     /* TODO: can we remove this? redundant information.. */
+    Priority priority;
+    EventType type;
 };
 
 #endif //EVENT_MANAGER_EVENT_HPP

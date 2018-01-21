@@ -86,7 +86,8 @@ public:
 
     std::vector<int> intli;
 
-    /* TODO: class object, ptr to derived class */
+    /* TODO: class object, ptr to derived class
+     * TODO: inplace deserialization for big message*/
 };
 
 TEST(Pipe, testDerivedEventWriteAndRead) {
