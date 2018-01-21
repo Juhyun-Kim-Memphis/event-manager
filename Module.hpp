@@ -1,6 +1,0 @@
-#ifndef EVENT_MANAGER_MODULE_HPP
-#define EVENT_MANAGER_MODULE_HPP
-
-#include "Lock.hpp"
-
-#endif //EVENT_MANAGER_MODULE_HPP
