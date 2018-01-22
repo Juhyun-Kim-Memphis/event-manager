@@ -6,7 +6,6 @@
 #include "Task.hpp"
 #include "Event.hpp"
 #include "Lock.hpp"
-#include "MessageList.hpp"
 
 class Worker {
 public:
@@ -65,8 +64,8 @@ private:
     Worker(const Worker& w) = delete;
     Worker(Worker&& w) = delete;
 
-    static constexpr Message::ID NEW_TASK = GlobalUnique::NEW_TASK; /* TODO: define proper Message ID */
-    static constexpr Message::ID TERMINATE_WORKER = GlobalUnique::TERMINATE_WORKER;
+    static constexpr Message::ID NEW_TASK = 1; /* TODO: define proper Message ID */
+    static constexpr Message::ID TERMINATE_WORKER = 2;
 
     void idleLoop();
     void runningLoop();
