@@ -46,9 +46,10 @@ class EventA : public Event {
 public:
     EventA(const std::vector<int> &intli) : Event('A'), intli(intli){}
 
+    static Message::ID getMessageID(){}
+
     bool operator==(const EventA &rhs) const {
-        return static_cast<const Event &>(*this) == static_cast<const Event &>(rhs) &&
-               intli == rhs.intli;
+        return intli == rhs.intli;
     }
 
     friend class boost::serialization::access;
@@ -75,10 +76,10 @@ public:
         buf.sputn(msg.data, msg.header.length);
         std::istream is(&buf);
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
-        if(msg.getType() == 'A')
+        if(msg.getID() == 'A')
             ia >> *result;
         else{
-            throw std::string("unknown EventType: ").append(std::to_string(msg.getType()));
+            throw std::string("unknown EventType: ").append(std::to_string(msg.getID()));
         }
         /* TODO: when to free buf? */
         return result;

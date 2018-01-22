@@ -109,8 +109,7 @@ public:
     }
 
     bool operator==(const EventForTest &rhs) const {
-        return getEventID() == rhs.getEventID() &&
-               data == rhs.data ;
+        return data == rhs.data ;
     }
 
     bool operator!=(const EventForTest &rhs) const {
@@ -161,7 +160,6 @@ TEST(BoostSerialization, testMessage) {
     }
 
     EXPECT_EQ(ev.data, resEv.data);
-    EXPECT_EQ(ev.getEventID(), resEv.getEventID());
     EXPECT_EQ(ev, resEv);
 }
 

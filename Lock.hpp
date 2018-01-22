@@ -19,7 +19,24 @@ using namespace std;
 
 class LockOwnershipChange : public Event {
 public:
-    LockOwnershipChange(): Event('r') {}
+    LockOwnershipChange(): Event(getMessageID()) {}
+
+    static constexpr Message::ID getMessageID() { return msgID; }
+
+    Message makeMessage() {
+        std::stringbuf buf;
+        std::ostream os(&buf);
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
+        oa << *this;
+        return Message(getMessageID(), buf.str().length(), buf.str().c_str());
+    }
+
+    static LockOwnershipChange *makeFromMsg(Message &msg) {
+        if(msg.getID() == getMessageID())
+            return new LockOwnershipChange;
+        else
+            throw std::string("unknown EventType: ").append(std::to_string(msg.getID()));
+    }
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -28,20 +45,8 @@ public:
         ar & boost::serialization::base_object<Event>(*this);
     }
 
-    Message makeMessage() {
-        std::stringbuf buf;
-        std::ostream os(&buf);
-        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
-        oa << *this;
-        return Message(getEventID(), buf.str().length(), buf.str().c_str());
-    }
-
-    static LockOwnershipChange *makeFromMsg(Message &msg) {
-        if(msg.getType() == 'r')
-            return new LockOwnershipChange;
-        else
-            throw std::string("unknown EventType: ").append(std::to_string(msg.getType()));
-    }
+private:
+    static constexpr Message::ID msgID = 4;
 };
 
 class Lock {

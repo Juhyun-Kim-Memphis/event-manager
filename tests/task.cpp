@@ -4,6 +4,9 @@
 class EventAlpha : public Event {
 public:
     EventAlpha(int val) : Event('a'), val(val) {}
+
+    static constexpr Message::ID getMessageID() { return 777; }
+
     static EventAlpha makeEvent(const Message &msg){
         int data = *(int *)msg.data;
         return EventAlpha(data);
@@ -20,6 +23,9 @@ public:
 class EventBeta : public Event {
 public:
     EventBeta(int val) : Event('b'), val(val) {}
+
+    static constexpr Message::ID getMessageID() { return 333; }
+
     static EventBeta makeEvent(const Message &msg){
         int data = *(int *)msg.data;
         return EventBeta(data);
@@ -36,19 +42,19 @@ public:
 class MultiEventHandlingTask : public Task {
 public:
     MultiEventHandlingTask() : alphaDone(false), betaDone(false) {
-        setFactoryAndHandlerForEventType<EventAlpha>(this);
-        setFactoryAndHandlerForEventType<EventBeta>(this);
+        useDefaultHandler<EventAlpha>(this);
+        useDefaultHandler<EventBeta>(this);
     }
 
     void start() override {}
 
     void handleEvent(EventAlpha *event){
-        // std::cout<<"EventAlpha: "<<event->val<<".\n";
+        std::cout<<"EventAlpha: "<<event->val<<".\n";
         alphaDone = true;
     }
 
     void handleEvent(EventBeta *event){
-        // std::cout<<"EventBeta: "<<event->val<<".\n";
+        std::cout<<"EventBeta: "<<event->val<<".\n";
         betaDone = true;
     }
 
@@ -66,12 +72,12 @@ private:
 TEST(Task, testHandle) {
     MultiEventHandlingTask task;
 
-    int alpha = 777;
-    Message msgAlpha('a', 4, (char *)&alpha);
+    int alpha = 777432;
+    Message msgAlpha(777, 4, (char *)&alpha);
     task.handle(&msgAlpha);
 
-    int beta = 333;
-    Message msgBeta('b', 4, (char *)&beta);
+    int beta = 3333245;
+    Message msgBeta(333, 4, (char *)&beta);
     task.handle(&msgBeta);
 
     EXPECT_EQ(true, task.hasQuit());

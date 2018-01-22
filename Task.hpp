@@ -24,10 +24,11 @@ public:
 
     virtual void start() = 0;
     virtual void handle(Message *msg) {
-        if(eventMap.find(msg->getType()) == eventMap.end())
+        if(eventMap.find(msg->getID()) == eventMap.end()){
             throw NotImplementedHandle();
+        }
 
-        EventAndHandler eventAndHandler = eventMap[msg->getType()](msg);
+        EventAndHandler eventAndHandler = eventMap[msg->getID()](msg);
         /* TODO: eventQueue must shore this EventAndHandler here? */
         eventAndHandler.handle();
     };
@@ -37,13 +38,13 @@ public:
 
 protected:
     void quit();
-    void setFactoryAndHandlerFor(Event::EventType type, const std::function<EventAndHandler(Message *)> &FactoryAndHandler) {
+    void setFactoryAndHandlerFor(Message::ID type, const std::function<EventAndHandler(Message *)> &FactoryAndHandler) {
         eventMap[type] = FactoryAndHandler;
     }
 
     template<typename E, typename T>
-    void setFactoryAndHandlerForEventType(T *derivedTask){
-        setFactoryAndHandlerFor(E::eventType(), [derivedTask](Message *msg){
+    void useDefaultHandler(T *derivedTask){
+        setFactoryAndHandlerFor(E::getMessageID(), [derivedTask](Message *msg){
             E *event = E::makeEventNew(*msg);
             void (T::*fn)(E *) = &T::handleEvent;
             return EventAndHandler(event, std::bind(fn, derivedTask, event));
@@ -57,7 +58,7 @@ protected:
     State state; //TODO: make TaskState class
 
 private:
-    std::map<Event::EventType, std::function<EventAndHandler(Message *)>> eventMap;
+    std::map<Message::ID, std::function<EventAndHandler(Message *)>> eventMap;
 };
 
 #endif //EVENT_MANAGER_TASK_HPP

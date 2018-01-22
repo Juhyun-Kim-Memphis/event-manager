@@ -8,15 +8,16 @@
 class Message {
 public:
     using ID = uint32_t;
+    using SizeInBytes = uint32_t;
 
     struct Header {
         Header() {}
-        Header(uint32_t type, uint32_t length) : type(type), length(length) {}
-        uint32_t type; /* TODO: enum?*/
-        uint32_t length;
+        Header(ID type, SizeInBytes length) : type(type), length(length) {}
+        ID type; /* TODO: enum?*/
+        SizeInBytes length;
     };
 
-    Message(uint32_t type, uint32_t length, const char *src) : header(type, length), data(new char[length]) {
+    Message(ID type, SizeInBytes length, const char *src) : header(type, length), data(new char[length]) {
         memcpy(data, src, length); /* TODO: too many copy operation of raw data. reduce them.*/
     }
 
@@ -24,7 +25,7 @@ public:
         delete[] data;
     }
 
-    int getType(){ return header.type; }
+    int getID(){ return header.type; }
 
     char *makeSerializedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
@@ -32,6 +33,7 @@ public:
         memcpy(buf + sizeof(Header), data, header.length);
         return buf;
     }
+
     size_t getSerializedMessageSize() const {
         return sizeof(Header) + header.length;
     }
@@ -61,7 +63,7 @@ public:
     char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 
     /* header only message */
-    Message(uint32_t type) : header(type, 0), data(nullptr) {}
+    Message(ID type) : header(type, 0), data(nullptr) {}
 };
 
 

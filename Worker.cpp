@@ -18,9 +18,9 @@ void Worker::idleLoop() {
     Message *rawPtr = pipe.reader().readOneMessage();
     std::unique_ptr<Message> newTaskMessage(rawPtr);
 
-    if ( newTaskMessage->getType() == TERMINATE_WORKER ){
+    if (newTaskMessage->getID() == TERMINATE_WORKER ){
         throw StopRunning();
-    } else if( newTaskMessage->getType() == NEW_TASK ) {
+    } else if(newTaskMessage->getID() == NEW_TASK ) {
         Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->data)); /* TODO: remove cast. just send empty msg! */
         setToRunningStatus(newTask);
     } else {
@@ -43,7 +43,7 @@ void Worker::runningLoop() {
 Message *Worker::waitAndGetMessage() {
     try{
         Message *msg = pipe.reader().readOneMessage();
-        if(msg->getType() == TERMINATE_WORKER)
+        if(msg->getID() == TERMINATE_WORKER)
             throw StopRunning(); /* TODO: delete msg */
         return msg;
     } catch (const StopRunning& stopTaskException) {

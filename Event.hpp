@@ -13,19 +13,11 @@ public:
 
     virtual EventType getEventID() const { return this->type; }
 
-    bool operator==(const Event &rhs) const {
-        return type == rhs.type;
-    }
-
-    bool operator!=(const Event &rhs) const {
-        return !(rhs == *this);
-    }
-
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
-        ar & type;
+        ar & priority;
     }
 
 private:

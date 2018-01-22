@@ -83,4 +83,7 @@ private:
     void setToRunningStatus(Task *newTask);
 };
 
+
+
+
 #endif //EVENT_MANAGER_WORKER_HPP

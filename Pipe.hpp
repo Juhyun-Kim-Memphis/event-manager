@@ -91,6 +91,4 @@ private:
     }
 };
 
-
-
 #endif //EVENT_MANAGER_PIPE_HPP
