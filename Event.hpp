@@ -18,7 +18,6 @@ public:
     }
 
 private:
-    /* TODO: can we remove this? redundant information.. */
     Priority priority;
 };
 
