@@ -96,9 +96,7 @@ TEST(BoostSerialization, testTextArchive) {
 
 class EventForTest : public Event {
 public:
-    EventForTest() : Event('t'), data(4, 5, 4.3) {}
-
-    EventForTest(char t) : Event(t), data(GPSPosition(3, 3, 1.1)) {}
+    EventForTest() : data(GPSPosition(3, 3, 1.1)) {}
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -120,7 +118,7 @@ public:
 };
 
 TEST(BoostSerialization, testMessage) {
-    EventForTest ev('d');
+    EventForTest ev;
 
     std::stringbuf buf;
     std::ostream os(&buf);
@@ -153,7 +151,7 @@ TEST(BoostSerialization, testMessage) {
     std::stringbuf resBuf;
     resBuf.sputn(recvBuf, nbyteRead);
     std::istream is(&resBuf);
-    EventForTest resEv('l');
+    EventForTest resEv;
     {
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
         ia >> resEv;

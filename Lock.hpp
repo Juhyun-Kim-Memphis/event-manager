@@ -19,8 +19,6 @@ using namespace std;
 
 class LockOwnershipChange : public Event {
 public:
-    LockOwnershipChange(): Event(getMessageID()) {}
-
     static constexpr Message::ID getMessageID() { return msgID; }
 
     Message makeMessage() {

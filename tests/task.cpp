@@ -3,7 +3,7 @@
 
 class EventAlpha : public Event {
 public:
-    EventAlpha(int val) : Event('a'), val(val) {}
+    EventAlpha(int val) : val(val) {}
 
     static constexpr Message::ID getMessageID() { return 777; }
 
@@ -22,7 +22,7 @@ public:
 
 class EventBeta : public Event {
 public:
-    EventBeta(int val) : Event('b'), val(val) {}
+    EventBeta(int val) : val(val) {}
 
     static constexpr Message::ID getMessageID() { return 333; }
 

@@ -44,9 +44,11 @@ TEST(Pipe, testSendingAddress) {
 
 class EventA : public Event {
 public:
-    EventA(const std::vector<int> &intli) : Event('A'), intli(intli){}
+    EventA(const std::vector<int> &intli) : intli(intli){}
 
-    static Message::ID getMessageID(){}
+    static Message::ID getMessageID(){
+        return 65;
+    }
 
     bool operator==(const EventA &rhs) const {
         return intli == rhs.intli;
@@ -65,7 +67,7 @@ public:
         std::ostream os(&buf);
         boost::archive::binary_oarchive oa(os, boost::archive::no_header);
         oa << *this;
-        return Message(getEventID(), buf.str().length(), buf.str().c_str());
+        return Message(getMessageID(), buf.str().length(), buf.str().c_str());
     }
 
     static EventA *makeFromMsg(Message &msg){
@@ -76,7 +78,7 @@ public:
         buf.sputn(msg.data, msg.header.length);
         std::istream is(&buf);
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
-        if(msg.getID() == 'A')
+        if(msg.getID() == 65)
             ia >> *result;
         else{
             throw std::string("unknown EventType: ").append(std::to_string(msg.getID()));
