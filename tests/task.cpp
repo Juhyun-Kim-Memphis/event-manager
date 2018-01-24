@@ -34,7 +34,6 @@ public:
         int data = *(int *)msg.getPayload();
         return new EventBeta(data);
     }
-    constexpr static int eventType(){ return 'b'; }
 
     int val;
 };
@@ -73,11 +72,11 @@ TEST(Task, testHandle) {
     MultiEventHandlingTask task;
 
     int alpha = 777432;
-    Message msgAlpha(777, 4, (char *)&alpha);
+    Message msgAlpha = Message::makeMessageByAllocatingAndCopying(777, reinterpret_cast<char *>(&alpha), sizeof(int));
     task.handle(&msgAlpha);
 
     int beta = 3333245;
-    Message msgBeta(333, 4, (char *)&beta);
+    Message msgBeta = Message::makeMessageByAllocatingAndCopying(333, reinterpret_cast<char *>(&beta), sizeof(int));
     task.handle(&msgBeta);
 
     EXPECT_EQ(true, task.hasQuit());

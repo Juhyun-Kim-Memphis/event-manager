@@ -18,16 +18,34 @@ public:
     };
 
     Message(TypeID type, SizeInBytes length, const char *src) : header(type, length), payload(new char[length]) {
-        memcpy(payload, src, length); /* TODO: too many copy operation of raw data. reduce them.*/
+        memcpy(payload.get(), src, length); /* TODO: too many copy operation of raw data. reduce them.*/
     }
 
+    Message(TypeID type, SizeInBytes length, const std::shared_ptr<char> &payload) : header(type, length), payload(payload) {}
+
     ~Message() {
-        delete[] payload;
+        /* payload will be deleted automatically. */
+    }
+
+    static Message makeMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size) {
+        return Message(type, size, src);
+    }
+
+    static Message* newMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size) {
+        return new Message(type, size, src); /*TODO: remove or change to smart ptr */
+    }
+
+    static Message makeMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size) {
+        return Message(type, size, payload);
+    }
+
+    static Message* newMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size) {
+        return new Message(type, size, payload); /*TODO: remove or change to smart ptr */
     }
 
     TypeID getID() const { return header.type; }
     SizeInBytes getPayloadSize() const { return header.length; }
-    char *getPayload() const { return payload; }
+    char *getPayload() const { return payload.get(); } /*TODO: remove .get() change return type to shared_ptr*/
 
     static Message makeDummyMessage(TypeID id = 0) {
         return Message(id);
@@ -36,7 +54,7 @@ public:
     char *makeSerializedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
         memcpy(buf, &header, sizeof(Header));
-        memcpy(buf + sizeof(Header), payload, header.length);
+        memcpy(buf + sizeof(Header), payload.get(), header.length);
         return buf;
     }
 
@@ -47,7 +65,7 @@ public:
     bool operator==(const Message &rhs) const {
         return header.type == rhs.header.type &&
                header.length == rhs.header.length &&
-               memcmp(payload, rhs.payload, header.length) == 0;
+               memcmp(payload.get(), rhs.payload.get(), header.length) == 0;
         /* WARNING: memcmp can cause SEGV */
     }
 
@@ -62,7 +80,7 @@ public:
 
 private:
     Header header;
-    char *payload; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
+    std::shared_ptr<char> payload;
 
     /* header only message */
     Message(TypeID type) : header(type, 0), payload(nullptr) {}

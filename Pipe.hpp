@@ -44,10 +44,9 @@ public:
     Message *readOneMessage() const {
         Message::Header header;
         read(readFd, &header, sizeof(Message::Header));
-        char *buf = (char *)malloc(header.length); //TODO: use streambuf or new.
-        read(readFd, buf, header.length); //TODO: add Assertion.
-        return new Message(header.type, header.length, buf);
-        /* TODO: use smart pointer, or delete buf */
+        std::shared_ptr<char> bufWrapper(new char[header.length]);
+        read(readFd, bufWrapper.get(), header.length); //TODO: add Assertion.
+        return Message::newMessageByOutsidePayload(header.type, bufWrapper, header.length);
     }
 
     ssize_t readBytes(void *buf, size_t len) const {

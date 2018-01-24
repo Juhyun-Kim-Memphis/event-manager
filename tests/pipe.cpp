@@ -6,7 +6,7 @@
 TEST(Pipe, testMessage) {
     Pipe pipe;
     char bytes[43] = "hello. this is sample string. length is 42";
-    Message msg(777, 43, bytes);
+    Message msg = Message::makeMessageByAllocatingAndCopying(777, bytes, 43);
 
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
@@ -33,7 +33,7 @@ TEST(Pipe, testSendingAddress) {
     int *data = new int;
     *data = 777;
 
-    Message msg(0, sizeof(int *), reinterpret_cast<char *>(&data));
+    Message msg = Message::makeMessageByAllocatingAndCopying(0, reinterpret_cast<char *>(&data), sizeof(int *));
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
     int *receiveData = *(reinterpret_cast<int **>(receivedMsg->getPayload()));

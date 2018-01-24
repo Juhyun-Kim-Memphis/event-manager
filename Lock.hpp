@@ -22,11 +22,7 @@ public:
     static constexpr Message::TypeID getMessageID() { return msgID; }
 
     Message makeMessage() {
-        std::stringbuf buf;
-        std::ostream os(&buf);
-        boost::archive::binary_oarchive oa(os, boost::archive::no_header);
-        oa << *this;
-        return Message(getMessageID(), buf.str().length(), buf.str().c_str());
+        return Message::makeDummyMessage(getMessageID());
     }
 
     static LockOwnershipChange *makeFromMsg(Message &msg) {
@@ -34,13 +30,6 @@ public:
             return new LockOwnershipChange;
         else
             throw std::string("unknown EventType: ").append(std::to_string(msg.getID()));
-    }
-
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & boost::serialization::base_object<Event>(*this);
     }
 
 private:
