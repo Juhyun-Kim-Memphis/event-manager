@@ -40,7 +40,7 @@ class PipeReader {
 public:
     PipeReader() {}
     void setFd(int fd) { readFd = fd; }
-
+    
     Message *readOneMessage() const {
         Message::Header header;
         read(readFd, &header, sizeof(Message::Header));

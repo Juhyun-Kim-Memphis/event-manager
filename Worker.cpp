@@ -59,8 +59,8 @@ void Worker::assignTask(Task *newTask) {
     /* TODO: remove isIdle query by making CTHR. make isIdle private and remove statusLock */
     if(isIdle()) {
         /* TODO: how to avoid casting of newTask */
-        Message taskAddressMessage(NEW_TASK, sizeof(Task *), reinterpret_cast<char *>(&newTask));
-        sendMessage(taskAddressMessage);
+        Message newTaskMsg = Message::makeMessageByAllocatingAndCopying(NEW_TASK, reinterpret_cast<char *>(&newTask), sizeof(Task *));
+        sendMessage(newTaskMsg);
     }
     else
         throw TooBusy();
@@ -80,7 +80,7 @@ void Worker::setToRunningStatus(Task *newTask) {
 }
 
 void Worker::terminate() { /* TODO: remove PipeWriter Parameter */
-    Message terminateMessage(TERMINATE_WORKER, 0, nullptr);
+    Message terminateMessage = Message::makeDummyMessage(TERMINATE_WORKER);
     sendMessage(terminateMessage);
 }
 

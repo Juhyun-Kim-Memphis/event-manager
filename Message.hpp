@@ -17,31 +17,20 @@ public:
         SizeInBytes length;
     };
 
-    Message(TypeID type, SizeInBytes length, const char *src) : header(type, length), payload(new char[length]) {
-        memcpy(payload.get(), src, length); /* TODO: too many copy operation of raw data. reduce them.*/
-    }
-
-    Message(TypeID type, SizeInBytes length, const std::shared_ptr<char> &payload) : header(type, length), payload(payload) {}
-
     ~Message() {
         /* payload will be deleted automatically. */
     }
 
-    static Message makeMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size) {
-        return Message(type, size, src);
-    }
+    /* allocate memory for payload and set contents to it */
+    static Message makeMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size);
+    static Message* newMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size);
 
-    static Message* newMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size) {
-        return new Message(type, size, src); /*TODO: remove or change to smart ptr */
-    }
+    /* Given payload(contiguous serialized data) as a form of shared_ptr(heap), make Message  */
+    static Message makeMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size);
+    static Message* newMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size);
 
-    static Message makeMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size) {
-        return Message(type, size, payload);
-    }
-
-    static Message* newMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size) {
-        return new Message(type, size, payload); /*TODO: remove or change to smart ptr */
-    }
+    /* TODO: make. (consider another class?) */
+    /* Given payload as a form of raw char * (stack variable), make Message  */
 
     TypeID getID() const { return header.type; }
     SizeInBytes getPayloadSize() const { return header.length; }
@@ -82,9 +71,16 @@ private:
     Header header;
     std::shared_ptr<char> payload;
 
+
+    Message(TypeID type, SizeInBytes length, const char *src) : header(type, length), payload(new char[length]) {
+        memcpy(payload.get(), src, length); /* TODO: too many copy operation of raw data. reduce them.*/
+    }
+    Message(TypeID type, SizeInBytes length, const std::shared_ptr<char> &payload) : header(type, length), payload(payload) {}
+
     /* header only message */
     Message(TypeID type) : header(type, 0), payload(nullptr) {}
 };
+
 
 
 #endif //EVENT_MANAGER_MESSAGE_HPP

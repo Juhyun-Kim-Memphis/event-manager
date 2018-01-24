@@ -58,7 +58,6 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
-        ar & boost::serialization::base_object<Event>(*this);
         ar & intli;
     }
 
@@ -67,7 +66,7 @@ public:
         std::ostream os(&buf);
         boost::archive::binary_oarchive oa(os, boost::archive::no_header);
         oa << *this;
-        return Message(getMessageID(), buf.str().length(), buf.str().c_str());
+        return Message::makeMessageByAllocatingAndCopying(getMessageID(), buf.str().c_str(), buf.str().length());
     }
 
     static EventA *makeFromMsg(Message &msg){
