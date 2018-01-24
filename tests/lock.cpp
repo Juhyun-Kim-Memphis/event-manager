@@ -47,7 +47,7 @@ TEST(Lock, testLockOwnerChange) {
     EXPECT_EQ(waiter, lock.getOwner());
 
     Message *msg = pipeForWaiter.reader().readOneMessage();
-    auto *ownershipChangeEvent = LockOwnershipChange::makeFromMsg(*msg);
+    auto *ownershipChangeEvent = LockOwnershipChange::newEvent(*msg);
     EXPECT_EQ(LockOwnershipChange::getMessageID(), msg->getID());
     delete msg;
     delete ownershipChangeEvent;

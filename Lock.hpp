@@ -25,7 +25,7 @@ public:
         return Message::makeDummyMessage(getMessageID());
     }
 
-    static LockOwnershipChange *makeFromMsg(Message &msg) {
+    static LockOwnershipChange *newEvent(Message &msg) {
         if(msg.getID() == getMessageID())
             return new LockOwnershipChange;
         else
@@ -53,10 +53,8 @@ public:
     }
 
     bool hasLocked() {
-        mtx.lock();
-        bool hasLocked = (lockVal == LOCKED);
-        mtx.unlock();
-        return hasLocked;
+        std::lock_guard<std::mutex> guard(mtx);
+        return (lockVal == LOCKED);
     }
 
     void dumpWaiters() {

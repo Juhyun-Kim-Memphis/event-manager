@@ -4,7 +4,7 @@
 
 bool Lock::acquire(User requester) {
     bool acquired = false;
-    mtx.lock();
+    std::lock_guard<std::mutex> guard(mtx);
 
     if (lockVal == UNLOCKED) {
         lockVal = LOCKED;
@@ -16,16 +16,13 @@ bool Lock::acquire(User requester) {
         acquired = false;
     }
 
-    mtx.unlock();
     return acquired;
 }
 
 void Lock::release() {
-    mtx.lock();
-    if (lockVal == UNLOCKED){
-        mtx.unlock();
+    std::lock_guard<std::mutex> guard(mtx);
+    if (lockVal == UNLOCKED)
         throw exception();
-    }
 
     if (waiters.empty()) {
         lockVal = UNLOCKED;
@@ -37,5 +34,4 @@ void Lock::release() {
 
         giveLockOwnership(waiter);
     }
-    mtx.unlock();
 }

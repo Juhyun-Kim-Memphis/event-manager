@@ -1,3 +1,4 @@
+#include <Lock.hpp>
 #include "gtest/gtest.h"
 #include "../Task.hpp"
 
@@ -7,11 +8,7 @@ public:
 
     static constexpr Message::TypeID getMessageID() { return 777; }
 
-    static EventAlpha makeEvent(const Message &msg){
-        int data = *(int *)msg.getPayload();
-        return EventAlpha(data);
-    }
-    static EventAlpha* makeEventNew(const Message &msg){
+    static EventAlpha* newEvent(const Message &msg){
         int data = *(int *)msg.getPayload();
         return new EventAlpha(data);
     }
@@ -26,11 +23,7 @@ public:
 
     static constexpr Message::TypeID getMessageID() { return 333; }
 
-    static EventBeta makeEvent(const Message &msg){
-        int data = *(int *)msg.getPayload();
-        return EventBeta(data);
-    }
-    static EventBeta* makeEventNew(const Message &msg){
+    static EventBeta* newEvent(const Message &msg){
         int data = *(int *)msg.getPayload();
         return new EventBeta(data);
     }
@@ -40,9 +33,10 @@ public:
 
 class MultiEventHandlingTask : public Task {
 public:
-    MultiEventHandlingTask() : alphaDone(false), betaDone(false) {
+    MultiEventHandlingTask() : alphaDone(false), betaDone(false), lockDone(false) {
         useDefaultHandler<EventAlpha>(this);
         useDefaultHandler<EventBeta>(this);
+        useDefaultHandler<LockOwnershipChange>(this);
     }
 
     void start() override {}
@@ -57,15 +51,21 @@ public:
         betaDone = true;
     }
 
+    void handleEvent(LockOwnershipChange *event){
+        std::cout<<"LockOwnershipChange .\n";
+        lockDone = true;
+    }
+
     void handle(Message *msg) override {
         Task::handle(msg);
-        if(alphaDone && betaDone)
+        if(alphaDone && betaDone && lockDone)
             quit();
     }
 
 private:
     bool alphaDone;
     bool betaDone;
+    bool lockDone;
 };
 
 TEST(Task, testHandle) {
@@ -78,6 +78,10 @@ TEST(Task, testHandle) {
     int beta = 3333245;
     Message msgBeta = Message::makeMessageByAllocatingAndCopying(333, reinterpret_cast<char *>(&beta), sizeof(int));
     task.handle(&msgBeta);
+
+    LockOwnershipChange event;
+    Message ownershipChangeMsg = event.makeMessage();
+    task.handle(&ownershipChangeMsg);
 
     EXPECT_EQ(true, task.hasQuit());
 }
