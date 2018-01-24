@@ -21,7 +21,7 @@ void Worker::idleLoop() {
     if (newTaskMessage->getID() == TERMINATE_WORKER ){
         throw StopRunning();
     } else if(newTaskMessage->getID() == NEW_TASK ) {
-        Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->data)); /* TODO: remove cast. just send empty msg! */
+        Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->getPayload())); /* TODO: remove cast. just send empty msg! */
         setToRunningStatus(newTask);
     } else {
         throw StopRunning();

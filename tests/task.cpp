@@ -5,14 +5,14 @@ class EventAlpha : public Event {
 public:
     EventAlpha(int val) : val(val) {}
 
-    static constexpr Message::ID getMessageID() { return 777; }
+    static constexpr Message::TypeID getMessageID() { return 777; }
 
     static EventAlpha makeEvent(const Message &msg){
-        int data = *(int *)msg.data;
+        int data = *(int *)msg.getPayload();
         return EventAlpha(data);
     }
     static EventAlpha* makeEventNew(const Message &msg){
-        int data = *(int *)msg.data;
+        int data = *(int *)msg.getPayload();
         return new EventAlpha(data);
     }
     constexpr static int eventType(){ return 'a'; }
@@ -24,14 +24,14 @@ class EventBeta : public Event {
 public:
     EventBeta(int val) : val(val) {}
 
-    static constexpr Message::ID getMessageID() { return 333; }
+    static constexpr Message::TypeID getMessageID() { return 333; }
 
     static EventBeta makeEvent(const Message &msg){
-        int data = *(int *)msg.data;
+        int data = *(int *)msg.getPayload();
         return EventBeta(data);
     }
     static EventBeta* makeEventNew(const Message &msg){
-        int data = *(int *)msg.data;
+        int data = *(int *)msg.getPayload();
         return new EventBeta(data);
     }
     constexpr static int eventType(){ return 'b'; }

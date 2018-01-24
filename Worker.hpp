@@ -64,8 +64,8 @@ private:
     Worker(const Worker& w) = delete;
     Worker(Worker&& w) = delete;
 
-    static constexpr Message::ID NEW_TASK = 1; /* TODO: define proper Message ID */
-    static constexpr Message::ID TERMINATE_WORKER = 2;
+    static constexpr Message::TypeID NEW_TASK = 1; /* TODO: define proper Message ID */
+    static constexpr Message::TypeID TERMINATE_WORKER = 2;
 
     void idleLoop();
     void runningLoop();

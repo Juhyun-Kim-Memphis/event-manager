@@ -10,9 +10,9 @@ TEST(Pipe, testMessage) {
 
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
-    EXPECT_EQ(777, receivedMsg->header.type);
-    EXPECT_EQ(43, receivedMsg->header.length);
-    EXPECT_EQ(0, memcmp(bytes, receivedMsg->data, 43));
+    EXPECT_EQ(777, receivedMsg->getID());
+    EXPECT_EQ(43, receivedMsg->getPayloadSize());
+    EXPECT_EQ(0, memcmp(bytes, receivedMsg->getPayload(), 43));
     delete receivedMsg;
 }
 
@@ -23,8 +23,8 @@ TEST(Pipe, testHeaderOnlyMessage) {
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
 
-    EXPECT_EQ(342, receivedMsg->header.type);
-    EXPECT_EQ(0, receivedMsg->header.length);
+    EXPECT_EQ(342, receivedMsg->getID());
+    EXPECT_EQ(0, receivedMsg->getPayloadSize());
     delete receivedMsg;
 }
 
@@ -36,7 +36,7 @@ TEST(Pipe, testSendingAddress) {
     Message msg(0, sizeof(int *), reinterpret_cast<char *>(&data));
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
-    int *receiveData = *(reinterpret_cast<int **>(receivedMsg->data));
+    int *receiveData = *(reinterpret_cast<int **>(receivedMsg->getPayload()));
 
     EXPECT_EQ(data, receiveData);
     delete receivedMsg;
@@ -46,7 +46,7 @@ class EventA : public Event {
 public:
     EventA(const std::vector<int> &intli) : intli(intli){}
 
-    static Message::ID getMessageID(){
+    static Message::TypeID getMessageID(){
         return 65;
     }
 
@@ -75,7 +75,7 @@ public:
         EventA *result = new EventA({});
 
         std::stringbuf buf;
-        buf.sputn(msg.data, msg.header.length);
+        buf.sputn(msg.getPayload(), msg.getPayloadSize());
         std::istream is(&buf);
         boost::archive::binary_iarchive ia(is, boost::archive::no_header);
         if(msg.getID() == 65)

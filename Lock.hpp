@@ -19,7 +19,7 @@ using namespace std;
 
 class LockOwnershipChange : public Event {
 public:
-    static constexpr Message::ID getMessageID() { return msgID; }
+    static constexpr Message::TypeID getMessageID() { return msgID; }
 
     Message makeMessage() {
         std::stringbuf buf;
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    static constexpr Message::ID msgID = 4;
+    static constexpr Message::TypeID msgID = 4;
 };
 
 class Lock {

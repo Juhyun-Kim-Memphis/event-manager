@@ -7,30 +7,36 @@
 /* can be event or task */
 class Message {
 public:
-    using ID = uint32_t;
+    using TypeID = uint32_t;
     using SizeInBytes = uint32_t;
 
     struct Header {
         Header() {}
-        Header(ID type, SizeInBytes length) : type(type), length(length) {}
-        ID type; /* TODO: enum?*/
+        Header(TypeID type, SizeInBytes length) : type(type), length(length) {}
+        TypeID type; /* TODO: enum?*/
         SizeInBytes length;
     };
 
-    Message(ID type, SizeInBytes length, const char *src) : header(type, length), data(new char[length]) {
-        memcpy(data, src, length); /* TODO: too many copy operation of raw data. reduce them.*/
+    Message(TypeID type, SizeInBytes length, const char *src) : header(type, length), payload(new char[length]) {
+        memcpy(payload, src, length); /* TODO: too many copy operation of raw data. reduce them.*/
     }
 
     ~Message() {
-        delete[] data;
+        delete[] payload;
     }
 
-    int getID(){ return header.type; }
+    TypeID getID() const { return header.type; }
+    SizeInBytes getPayloadSize() const { return header.length; }
+    char *getPayload() const { return payload; }
+
+    static Message makeDummyMessage(TypeID id = 0) {
+        return Message(id);
+    }
 
     char *makeSerializedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
         memcpy(buf, &header, sizeof(Header));
-        memcpy(buf + sizeof(Header), data, header.length);
+        memcpy(buf + sizeof(Header), payload, header.length);
         return buf;
     }
 
@@ -41,7 +47,7 @@ public:
     bool operator==(const Message &rhs) const {
         return header.type == rhs.header.type &&
                header.length == rhs.header.length &&
-               memcmp(data, rhs.data, header.length) == 0;
+               memcmp(payload, rhs.payload, header.length) == 0;
         /* WARNING: memcmp can cause SEGV */
     }
 
@@ -50,20 +56,16 @@ public:
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Message &message) {
-        os << "type: " << message.header.type << " length: " << message.header.length << " data: " << message.data;
+        os << "type: " << message.header.type << " length: " << message.header.length << " data: " << message.payload;
         return os;
     }
 
-    static Message makeDummyMessage(ID id = 0) {
-        return Message(id);
-    }
-
-public:
+private:
     Header header;
-    char *data; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
+    char *payload; /* TODO: "onwership?", "dtor delete?", "unique_ptr?" */
 
     /* header only message */
-    Message(ID type) : header(type, 0), data(nullptr) {}
+    Message(TypeID type) : header(type, 0), payload(nullptr) {}
 };
 
 

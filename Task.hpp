@@ -20,7 +20,7 @@ public:
         const char* what() const noexcept {return "NotImplementedHandle!\n";}
     };
 
-    Task() :  state(INITIAL) {}
+    Task() :  taskFinished(false) {}
 
     virtual void start() = 0;
     virtual void handle(Message *msg) {
@@ -32,33 +32,29 @@ public:
         /* TODO: eventQueue must shore this EventAndHandler here? */
         eventAndHandler.handle();
     };
-    bool hasQuit();
+    bool hasQuit() const;
 
     /* TODO: make public method to force to quit the task */
 
 protected:
     void quit();
-    void setFactoryAndHandlerFor(Message::ID type, const std::function<EventAndHandler(Message *)> &FactoryAndHandler) {
+    void addToDefaultEventMap(Message::TypeID type, const std::function<EventAndHandler(Message *)> &FactoryAndHandler) {
         eventMap[type] = FactoryAndHandler;
     }
 
     template<typename E, typename T>
     void useDefaultHandler(T *derivedTask){
-        setFactoryAndHandlerFor(E::getMessageID(), [derivedTask](Message *msg){
+        addToDefaultEventMap(E::getMessageID(), [derivedTask](Message *msg) {
             E *event = E::makeEventNew(*msg);
             void (T::*fn)(E *) = &T::handleEvent;
             return EventAndHandler(event, std::bind(fn, derivedTask, event));
         }); /* TODO: how long the life cycle of this lambda is ? */
     }
 
-    enum State {
-        INITIAL,
-        TERMINATED
-    };
-    State state; //TODO: make TaskState class
+    bool taskFinished;
 
 private:
-    std::map<Message::ID, std::function<EventAndHandler(Message *)>> eventMap;
+    std::map<Message::TypeID, std::function<EventAndHandler(Message *)>> eventMap;
 };
 
 #endif //EVENT_MANAGER_TASK_HPP

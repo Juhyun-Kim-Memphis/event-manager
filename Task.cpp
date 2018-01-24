@@ -1,10 +1,10 @@
 #include "Task.hpp"
 
 void Task::quit() {
-    state = TERMINATED;
+    taskFinished = true;
 }
 
-bool Task::hasQuit() {
-    return state == TERMINATED;
+bool Task::hasQuit() const {
+    return taskFinished;
 }
 
