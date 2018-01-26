@@ -20,7 +20,7 @@ public:
     void writeOneMessage(const Message &msg) const {
         char *sendBuffer = msg.makeSerializedMessage();
         write(writeFd, sendBuffer, msg.getSerializedMessageSize());
-        delete sendBuffer;
+        delete[] sendBuffer;
     }
 
     /*TODO: remove */
@@ -44,9 +44,9 @@ public:
     Message *readOneMessage() const {
         Message::Header header;
         read(readFd, &header, sizeof(Message::Header));
-        std::shared_ptr<char> bufWrapper(new char[header.length]);
+        std::shared_ptr<char> bufWrapper(new char[header.length], std::default_delete<char[]>());
         read(readFd, bufWrapper.get(), header.length); //TODO: add Assertion.
-        return Message::newMessageByOutsidePayload(header.type, bufWrapper, header.length);
+        return RAIIWrapperMessage::newMessageByOutsidePayload(header.type, bufWrapper, header.length);
     }
 
     ssize_t readBytes(void *buf, size_t len) const {

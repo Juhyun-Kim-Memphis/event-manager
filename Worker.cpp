@@ -21,7 +21,7 @@ void Worker::idleLoop() {
     if (newTaskMessage->getID() == TERMINATE_WORKER ){
         throw StopRunning();
     } else if(newTaskMessage->getID() == NEW_TASK ) {
-        Task *newTask = *(reinterpret_cast<Task **>(newTaskMessage->getPayload())); /* TODO: remove cast. just send empty msg! */
+        Task *newTask = *(reinterpret_cast<Task * const *>(newTaskMessage->getPayload())); /* TODO: remove cast. just send empty msg! */
         setToRunningStatus(newTask);
     } else {
         throw StopRunning();
@@ -33,18 +33,21 @@ void Worker::runningLoop() {
     currentTask->start();
 
     while( !currentTask->hasQuit() ) {
-        Message *msg = waitAndGetMessage();
-        currentTask->handle(msg);
+        std::shared_ptr<Message> msg = waitAndGetMessage();
+        currentTask->handle(msg.get());
     }
 
     setToIdleStatus();
 }
 
-Message *Worker::waitAndGetMessage() {
+std::shared_ptr<Message> Worker::waitAndGetMessage() {
     try{
-        Message *msg = pipe.reader().readOneMessage();
+        Message *msg_ptr = pipe.reader().readOneMessage();
+        std::shared_ptr<Message> msg(msg_ptr);
+
         if(msg->getID() == TERMINATE_WORKER)
             throw StopRunning(); /* TODO: delete msg */
+
         return msg;
     } catch (const StopRunning& stopTaskException) {
         throw; /* rethrow StopRunning */
@@ -59,7 +62,8 @@ void Worker::assignTask(Task *newTask) {
     /* TODO: remove isIdle query by making CTHR. make isIdle private and remove statusLock */
     if(isIdle()) {
         /* TODO: how to avoid casting of newTask */
-        Message newTaskMsg = Message::makeMessageByAllocatingAndCopying(NEW_TASK, reinterpret_cast<char *>(&newTask), sizeof(Task *));
+        Task *paylaod = newTask;
+        Message newTaskMsg = Message::makeMessage(NEW_TASK, reinterpret_cast<char *>(&paylaod), sizeof(Task *));
         sendMessage(newTaskMsg);
     }
     else

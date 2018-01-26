@@ -6,10 +6,14 @@
 TEST(Pipe, testMessage) {
     Pipe pipe;
     char bytes[43] = "hello. this is sample string. length is 42";
-    Message msg = Message::makeMessageByAllocatingAndCopying(777, bytes, 43);
+    Message msg = Message::makeMessage(777, bytes, 43);
 
     pipe.writer().writeOneMessage(msg);
+
+    /// ///
+
     Message *receivedMsg = pipe.reader().readOneMessage();
+
     EXPECT_EQ(777, receivedMsg->getID());
     EXPECT_EQ(43, receivedMsg->getPayloadSize());
     EXPECT_EQ(0, memcmp(bytes, receivedMsg->getPayload(), 43));
@@ -30,16 +34,16 @@ TEST(Pipe, testHeaderOnlyMessage) {
 
 TEST(Pipe, testSendingAddress) {
     Pipe pipe;
-    int *data = new int;
-    *data = 777;
+    const int *data = new int(777);
 
-    Message msg = Message::makeMessageByAllocatingAndCopying(0, reinterpret_cast<char *>(&data), sizeof(int *));
+    Message msg = Message::makeMessage(0, reinterpret_cast<char *>(&data), sizeof(int *));
     pipe.writer().writeOneMessage(msg);
     Message *receivedMsg = pipe.reader().readOneMessage();
-    int *receiveData = *(reinterpret_cast<int **>(receivedMsg->getPayload()));
+    const int *receiveData = *(reinterpret_cast<int * const *>(receivedMsg->getPayload()));
 
     EXPECT_EQ(data, receiveData);
     delete receivedMsg;
+    delete data;
 }
 
 class EventA : public Event {
@@ -61,12 +65,12 @@ public:
         ar & intli;
     }
 
-    Message makeMessage() {
+    Message *newMessage() {
         std::stringbuf buf;
         std::ostream os(&buf);
         boost::archive::binary_oarchive oa(os, boost::archive::no_header);
         oa << *this;
-        return Message::makeMessageByAllocatingAndCopying(getMessageID(), buf.str().c_str(), buf.str().length());
+        return RAIIWrapperMessage::newMessageByAllocatingAndCopying(getMessageID(), buf.str().c_str(), buf.str().length());
     }
 
     static EventA *makeFromMsg(Message &msg){
@@ -94,9 +98,9 @@ public:
 
 TEST(Pipe, testDerivedEventWriteAndRead) {
     EventA eventA({4, 5});
-
+    std::shared_ptr<Message> msg(eventA.newMessage());
     Pipe pipe;
-    pipe.writer().writeOneMessage(eventA.makeMessage());
+    pipe.writer().writeOneMessage(*msg);
 
     Message *receivedMsg = pipe.reader().readOneMessage();
     EventA *receivedEvent = EventA::makeFromMsg(*receivedMsg);

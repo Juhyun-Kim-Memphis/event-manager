@@ -69,7 +69,7 @@ private:
 
     void idleLoop();
     void runningLoop();
-    Message *waitAndGetMessage(); /* TODO: make return type to unique_ptr */
+    std::shared_ptr<Message> waitAndGetMessage(); /* TODO: make return type to unique_ptr */
     void terminate();
 
     std::thread workerThread;

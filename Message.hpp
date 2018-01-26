@@ -4,7 +4,9 @@
 #include <ostream>
 #include <cstring>
 
-/* can be event or task */
+/* Raw Message class.
+ * consists of Header(8byte) + Byte Array (
+ * */
 class Message {
 public:
     using TypeID = uint32_t;
@@ -17,33 +19,24 @@ public:
         SizeInBytes length;
     };
 
-    ~Message() {
-        /* payload will be deleted automatically. */
-    }
+    virtual ~Message() {}
 
-    /* allocate memory for payload and set contents to it */
-    static Message makeMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size);
-    static Message* newMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size);
-
-    /* Given payload(contiguous serialized data) as a form of shared_ptr(heap), make Message  */
-    static Message makeMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size);
-    static Message* newMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size);
-
-    /* TODO: make. (consider another class?) */
-    /* Given payload as a form of raw char * (stack variable), make Message  */
-
-    TypeID getID() const { return header.type; }
-    SizeInBytes getPayloadSize() const { return header.length; }
-    char *getPayload() const { return payload.get(); } /*TODO: remove .get() change return type to shared_ptr*/
-
+    /* Message Factory */
+    static Message makeMessage(TypeID type, const char *src, SizeInBytes size);
     static Message makeDummyMessage(TypeID id = 0) {
         return Message(id);
     }
 
+    /* Accessor */
+    TypeID getID() const { return header.type; }
+    SizeInBytes getPayloadSize() const { return header.length; }
+    const char *getPayload() const { return payload; } /*TODO: remove .get() change return type to shared_ptr*/
+
+    /* only used in IO (pipe, socket, file).. */
     char *makeSerializedMessage() const {
         char *buf = new char[sizeof(Header) + header.length];
         memcpy(buf, &header, sizeof(Header));
-        memcpy(buf + sizeof(Header), payload.get(), header.length);
+        memcpy(buf + sizeof(Header), payload, header.length);
         return buf;
     }
 
@@ -51,10 +44,11 @@ public:
         return sizeof(Header) + header.length;
     }
 
+    /* Auxiliary Function */
     bool operator==(const Message &rhs) const {
         return header.type == rhs.header.type &&
                header.length == rhs.header.length &&
-               memcmp(payload.get(), rhs.payload.get(), header.length) == 0;
+               memcmp(payload, rhs.payload, header.length) == 0;
         /* WARNING: memcmp can cause SEGV */
     }
 
@@ -69,18 +63,35 @@ public:
 
 private:
     Header header;
-    std::shared_ptr<char> payload;
+    const char *payload;
 
-
-    Message(TypeID type, SizeInBytes length, const char *src) : header(type, length), payload(new char[length]) {
-        memcpy(payload.get(), src, length); /* TODO: too many copy operation of raw data. reduce them.*/
-    }
-    Message(TypeID type, SizeInBytes length, const std::shared_ptr<char> &payload) : header(type, length), payload(payload) {}
-
+    Message(TypeID type, const char *src, SizeInBytes size) : header(type, size), payload(src) {}
     /* header only message */
     Message(TypeID type) : header(type, 0), payload(nullptr) {}
 };
 
 
+class RAIIWrapperMessage : public Message {
+public:
+    /* Given payload(contiguous serialized data) as a form of shared_ptr(heap), make Message  */
+    static RAIIWrapperMessage* newMessageByOutsidePayload(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes size) {
+        return new RAIIWrapperMessage(type, payload, size);
+    }
+
+    /**/
+    static RAIIWrapperMessage* newMessageByAllocatingAndCopying(TypeID type, const char *src, SizeInBytes size) {
+        char *dst = new char[size];
+        memcpy(dst, src, size);
+        return new RAIIWrapperMessage(type, dst, size);
+    }
+
+private:
+    RAIIWrapperMessage(TypeID type, char src[], SizeInBytes length)
+            : Message(Message::makeMessage(type, src, length)), payloadRAIIWrapper(src, std::default_delete<char[]>()) {}
+    RAIIWrapperMessage(TypeID type, const std::shared_ptr<char> &payload, SizeInBytes length)
+            : Message(Message::makeMessage(type, payload.get(), length)), payloadRAIIWrapper(payload) {}
+
+    std::shared_ptr<char> payloadRAIIWrapper;
+};
 
 #endif //EVENT_MANAGER_MESSAGE_HPP

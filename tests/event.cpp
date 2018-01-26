@@ -129,7 +129,7 @@ TEST(BoostSerialization, testMessage) {
 
     uint32_t length = buf.str().size();
     uint32_t msgSize = sizeof(uint32_t) + length;
-    char *data = (char *)malloc(msgSize);
+    char *data = new char[msgSize];
     memcpy(data , &length, sizeof(uint32_t));
     memcpy(data + sizeof(uint32_t), buf.str().c_str(), length); //TODO: make ev to be serialized first!
 
@@ -159,6 +159,7 @@ TEST(BoostSerialization, testMessage) {
 
     EXPECT_EQ(ev.data, resEv.data);
     EXPECT_EQ(ev, resEv);
+    delete[] data;
 }
 
 class Foo {

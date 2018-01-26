@@ -72,11 +72,11 @@ TEST(Task, testHandle) {
     MultiEventHandlingTask task;
 
     int alpha = 777432;
-    Message msgAlpha = Message::makeMessageByAllocatingAndCopying(777, reinterpret_cast<char *>(&alpha), sizeof(int));
+    Message msgAlpha = Message::makeMessage(777, reinterpret_cast<char *>(&alpha), sizeof(int));
     task.handle(&msgAlpha);
 
     int beta = 3333245;
-    Message msgBeta = Message::makeMessageByAllocatingAndCopying(333, reinterpret_cast<char *>(&beta), sizeof(int));
+    Message msgBeta = Message::makeMessage(333, reinterpret_cast<char *>(&beta), sizeof(int));
     task.handle(&msgBeta);
 
     LockOwnershipChange event;
