@@ -57,13 +57,6 @@ public:
         return (lockVal == LOCKED);
     }
 
-    void dumpWaiters() {
-        for(auto e : waiters){
-            std::cout <<" "<<e->getWriteFd()<<", ";
-        }
-        std::cout<<"\n";
-    }
-
 protected:
     void giveLockOwnership(User waiter) {
         LockOwnershipChange event;

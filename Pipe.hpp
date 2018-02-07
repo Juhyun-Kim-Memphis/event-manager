@@ -28,7 +28,7 @@ public:
         return write(writeFd, data, len);
     }
 
-    int getWriteFd() const { return writeFd; }
+    int getFD() const { return writeFd; }
 
 private:
     PipeWriter(const PipeWriter& pw) = delete;
@@ -52,6 +52,8 @@ public:
     ssize_t readBytes(void *buf, size_t len) const {
         return read(readFd, buf, len);
     }
+
+    int getFD() const { return readFd; }
 
 private:
     PipeReader(const PipeReader& pw) = delete;
