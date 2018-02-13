@@ -62,16 +62,10 @@ public:
 
     void start(unsigned short port){
         listener.reset(new ListeningSocket(ioService, port));
-
-        registerMyPipe();
         listener->start();
-        ioService.run();
 
-        /*TODO: remove*/
-        std::cout<<"clientList:\n";
-        for(auto &e : listener->connectedClients) {
-            std::cout<<"client: "<<e->remote_endpoint()<<"\n";
-        }
+        /* block here until getting STOP msg */
+        ioService.run();
     }
 
     /* may be called by other thread */
@@ -84,20 +78,11 @@ public:
         return pipe.writer();
     }
 
-    /* TODO: change to private */
-    void registerMyPipe() {
-        bufSize = 1024;
-        totalBytesRead = 0;
-        pipeReadBuf.reset(new char[bufSize]);
-
-
-    }
-
-    asio::io_service ioService;
-
 private:
     std::unique_ptr<ListeningSocket> listener;
     Pipe pipe;
+
+    asio::io_service ioService;
 
     /*asio::streambuf pipeReadBuf;*/
     std::unique_ptr<char[]> pipeReadBuf;

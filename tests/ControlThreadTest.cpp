@@ -200,12 +200,12 @@ TEST(ControlThread, testReadPipeOfControlThread) {
     asio::io_service ios;
 
     //// write ////
-    asio::posix::stream_descriptor writeEnd(ios, pipe.writer().getFD());
 
     std::string msg("Hello, You.\n");
     std::shared_ptr<Message> toBeSent(RAIIWrapperMessage::newMessageByAllocatingAndCopying(66, msg.c_str(), msg.length()));
     pipe.writer().writeOneMessage(*toBeSent.get());
 
+    asio::posix::stream_descriptor writeEnd(ios, pipe.writer().getFD());
     Message stop = Message::makeDummyMessage(ControlThread::STOP);
     writeEnd.write_some(asio::buffer(stop.getHeader(), sizeof(Message::Header)));
 
