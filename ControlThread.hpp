@@ -58,6 +58,8 @@ public:
 
 class ControlThread {
 public:
+    static constexpr Message::TypeID STOP = 7453584;
+
     void start(unsigned short port){
         listener.reset(new ListeningSocket(ioService, port));
 
@@ -88,21 +90,7 @@ public:
         totalBytesRead = 0;
         pipeReadBuf.reset(new char[bufSize]);
 
-        asio::posix::stream_descriptor readEnd(ioService, pipe.reader().getFD());
-        readEnd.async_read_some(asio::buffer(pipeReadBuf.get(), bufSize), [this, &readEnd]
-                (const boost::system::error_code& error, std::size_t byteTransferred){
-            if( error != 0 ){
-                std::cerr<<"Pipe API Error:"<<error.message()<<"("<<error.value()<<")"<<std::endl;
-            }
 
-            totalBytesRead += byteTransferred;
-
-            if (totalBytesRead == byteTransferred)
-                return;
-
-            std::string contents(pipeReadBuf.get());
-            std::cout<< contents <<", byteTransferred: "<<byteTransferred<<std::endl;
-        });
     }
 
     asio::io_service ioService;

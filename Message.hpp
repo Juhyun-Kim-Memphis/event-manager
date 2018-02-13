@@ -17,6 +17,11 @@ public:
         Header(TypeID type, SizeInBytes length) : type(type), length(length) {}
         TypeID type; /* TODO: enum?*/
         SizeInBytes length;
+
+        void reset() {
+            type = 0;
+            length = 0;
+        }
     };
 
     virtual ~Message() {}
@@ -28,6 +33,7 @@ public:
     }
 
     /* Accessor */
+    Header *getHeader() { return &header; }
     TypeID getID() const { return header.type; }
     SizeInBytes getPayloadSize() const { return header.length; }
     const char *getPayload() const { return payload; } /*TODO: remove .get() change return type to shared_ptr*/

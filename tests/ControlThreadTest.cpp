@@ -93,11 +93,11 @@ TEST(ControlThread, testPipeAsAsioStreamDescriptor) {
 
 TEST(ControlThread, testMultipleClient) {
     ControlThread cthr;
-    std::thread controlThread(std::bind(&ControlThread::start, &cthr, 33334));
+    std::thread controlThread(std::bind(&ControlThread::start, &cthr, 33336));
 
     auto clientRoutine = [](){
         DummyClient client;
-        client.connect("127.0.0.1", 33334);
+        client.connect("127.0.0.1", 33336);
     };
 
     std::vector< std::unique_ptr<std::thread> > clients;
@@ -115,16 +115,23 @@ TEST(ControlThread, testMultipleClient) {
 }
 
 struct PipeInputStream {
-    PipeInputStream(asio::io_service &ioService, int readFD) :
+    PipeInputStream(asio::io_service &ios, int readFD) :
             totalBytesRead(0),
-            readPipe(new asio::posix::stream_descriptor(ioService, readFD)) {}
+            readPipe(new asio::posix::stream_descriptor(ios, readFD)),
+            ioService(ios) {}
 
     std::shared_ptr<asio::posix::stream_descriptor> readPipe;
+    asio::io_service &ioService;
+
     asio::streambuf buf;
     std::size_t totalBytesRead;
+
+    Message::Header tempHeader;
 };
 
-void pipeReadCallback(const boost::system::error_code& ec, std::size_t bytesRead, std::shared_ptr<PipeInputStream> pis) {
+void onReadMessageHeader(const boost::system::error_code& ec, std::size_t bytesRead, std::shared_ptr<PipeInputStream> pis);
+
+void onReadPayload(const boost::system::error_code& ec, std::size_t bytesRead, std::shared_ptr<PipeInputStream> pis) {
     if (ec != 0) {
         std::cerr<<"Pipe API Error:"<<ec.message()<<"("<<ec.value()<<")"<<std::endl;
         return;
@@ -132,17 +139,60 @@ void pipeReadCallback(const boost::system::error_code& ec, std::size_t bytesRead
 
     pis->totalBytesRead += bytesRead;
 
+    pis->buf.commit(bytesRead);
     std::istream is(&pis->buf);
     std::string contents;
-//    is >> contents;
     std::getline(is, contents);
-    std::cout<< "received:"<< contents<<", byteRead: "<<bytesRead<<"\n";
 
-//    pis->readPipe->async_read_some(asio::buffer(pis->buf.get() + pis->totalBytesRead,
-//                                                pis->bufSize - pis->totalBytesRead),
-//                                   std::bind(pipeReadCallback,
-//                                             std::placeholders::_1,
-//                                             std::placeholders::_2, pis));
+
+    std::cout<<"received:["<< contents<<"] size: "<< contents.size()<<", "
+             <<"byteRead: "<<bytesRead<<", "
+             <<"input size: "<<pis->buf.size()<<", "
+             <<"temp header: "<<pis->tempHeader.type<<", "<<pis->tempHeader.length<<"\n\n";
+
+    pis->tempHeader.reset();
+    asio::async_read(*pis->readPipe.get(), asio::buffer(&pis->tempHeader, sizeof(Message::Header)),
+                     std::bind(onReadMessageHeader, std::placeholders::_1, std::placeholders::_2, pis));
+}
+
+void onReadMessageHeader(const boost::system::error_code& ec, std::size_t bytesRead, std::shared_ptr<PipeInputStream> pis) {
+    if (ec != 0) {
+        std::cerr<<"Pipe API Error:"<<ec.message()<<"("<<ec.value()<<")"<<std::endl;
+        return;
+    }
+
+    pis->totalBytesRead += bytesRead;
+
+    std::cout<<"onReadMessageHeader: byteRead: "<<bytesRead<<", "
+             <<"input size: "<<pis->buf.size()<<", "
+             <<"temp header: "<<pis->tempHeader.type<<", "<<pis->tempHeader.length<<"\n";
+
+    if(pis->tempHeader.type == ControlThread::STOP){
+        /* TODO: remove or change this as log*/
+        std::cout<<"In onReadMessageHeader: received STOP message. \n";
+        pis->ioService.stop();
+    }
+
+    /* TODO: to insert switch statement here. */
+
+    auto payloadSize = pis->tempHeader.length;
+
+    if( payloadSize == 0 )
+        asio::async_read(*pis->readPipe.get(), asio::buffer(&pis->tempHeader, sizeof(Message::Header)),
+                     std::bind(onReadMessageHeader,
+                               std::placeholders::_1,
+                               std::placeholders::_2, pis));
+    else if( payloadSize > 0 ){
+        asio::async_read(*pis->readPipe.get(), pis->buf, asio::transfer_exactly(payloadSize),
+                         std::bind(onReadPayload,
+                                   std::placeholders::_1,
+                                   std::placeholders::_2, pis));
+    }
+    else {
+        std::cerr<<"Pipe Message Error: Invalid Payload Size: ["<<payloadSize<<"]"<<std::endl;
+        return;
+    }
+
 }
 
 TEST(ControlThread, testReadPipeOfControlThread) {
@@ -150,21 +200,22 @@ TEST(ControlThread, testReadPipeOfControlThread) {
     asio::io_service ios;
 
     //// write ////
-    std::string buf = "Hello, world.";
     asio::posix::stream_descriptor writeEnd(ios, pipe.writer().getFD());
-    writeEnd.write_some(asio::buffer(buf));
 
-    std::string buf2 = "Hello, cthr.";
-    pipe.writer().writeBytes(buf2.c_str(), buf2.length());
+    std::string msg("Hello, You.\n");
+    std::shared_ptr<Message> toBeSent(RAIIWrapperMessage::newMessageByAllocatingAndCopying(66, msg.c_str(), msg.length()));
+    pipe.writer().writeOneMessage(*toBeSent.get());
+
+    Message stop = Message::makeDummyMessage(ControlThread::STOP);
+    writeEnd.write_some(asio::buffer(stop.getHeader(), sizeof(Message::Header)));
 
     //// read ////
     std::shared_ptr<PipeInputStream> pis(new PipeInputStream(ios, pipe.reader().getFD()));
 
-    boost::asio::streambuf::mutable_buffers_type mutableBuffer = pis->buf.prepare(1024);
-    pis->readPipe->async_read_some(asio::buffer(mutableBuffer),
-                                   std::bind(pipeReadCallback,
-                                             std::placeholders::_1,
-                                             std::placeholders::_2, pis));
+    asio::async_read(*pis->readPipe.get(), asio::buffer(&pis->tempHeader, sizeof(Message::Header)),
+                     std::bind(onReadMessageHeader, std::placeholders::_1, std::placeholders::_2, pis));
 
     ios.run();
+
+    std::cout<<"Reached here .\n";
 }
