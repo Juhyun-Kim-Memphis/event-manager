@@ -5,90 +5,55 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include "Pipe.hpp"
+#include "ConnectAcceptor.hpp"
 
 using namespace boost;
 
-class ListeningSocket {
-public:
-    ListeningSocket(asio::io_service &ioService, unsigned short listeningPortNum)
-            : isStopped(false), ioService(ioService),
-              acceptor(ioService, asio::ip::tcp::endpoint(asio::ip::address_v4::any(), listeningPortNum)) {}
-
-    void start() {
-        acceptor.listen();
-        acyncAccept();
-    }
-
-    void stop() {
-        isStopped.store(true);
-    }
-
-private:
-    using Socket = asio::ip::tcp::socket;
-
-    void registerClient(const std::shared_ptr<Socket> &newClient) {
-        connectedClients.push_back(newClient);
-    }
-
-    void acyncAccept() {
-        std::shared_ptr<Socket> clientSocket(new asio::ip::tcp::socket(ioService));
-        acceptor.async_accept(*clientSocket.get(), [this, clientSocket](const boost::system::error_code& error)
-        {
-            if(error != 0) /* TODO: use throw */
-                std::cerr<<"Socket API Error:"<<error.message()<<"("<<error.value()<<")"<<std::endl;
-            else {
-                registerClient(clientSocket);
-
-                if(isStopped.load())
-                    acceptor.close();
-                else
-                    acyncAccept();
-            }
-        });
-    }
-
-    std::atomic<bool> isStopped;
-    asio::io_service& ioService;
-    asio::ip::tcp::acceptor acceptor;
-
-public:
-    /*TODO: move to ControlThread */
-    std::vector<std::shared_ptr<Socket>> connectedClients;
-};
+struct PipeInputStream;
 
 class ControlThread {
 public:
     static constexpr Message::TypeID STOP = 7453584;
 
-    void start(unsigned short port){
-        listener.reset(new ListeningSocket(ioService, port));
-        listener->start();
+    ControlThread();
 
-        /* block here until getting STOP msg */
-        ioService.run();
-    }
+    void runUntilGettingStop();
 
-    /* may be called by other thread */
-    void stop(){
-        listener->stop();
-        ioService.stop();
-    }
-
-    PipeWriter &getPipeWriter(){ /* TODO: remove */
+    /* may be called by other threads. */
+    /* TODO: remove */
+    PipeWriter &getPipeWriter() {
         return pipe.writer();
     }
 
-private:
-    std::unique_ptr<ListeningSocket> listener;
-    Pipe pipe;
+    asio::io_service &getIOService() {
+        return ioService;
+    }
 
+private:
     asio::io_service ioService;
 
-    /*asio::streambuf pipeReadBuf;*/
-    std::unique_ptr<char[]> pipeReadBuf;
-    std::size_t totalBytesRead;
-    unsigned int bufSize;
+    Pipe pipe;
+    std::shared_ptr<PipeInputStream> pis;
 };
+
+
+struct PipeInputStream {
+    PipeInputStream(asio::io_service &ios, int readFD) :
+            totalBytesRead(0),
+            readPipe(new asio::posix::stream_descriptor(ios, readFD)),
+            ioService(ios) {}
+
+    std::shared_ptr<asio::posix::stream_descriptor> readPipe;
+    asio::io_service &ioService;
+
+    /* pipe read buffer for Message Header. */
+    Message::Header tempHeader;
+
+    /* pipe read buffer for Message payload. */
+    asio::streambuf buf;
+    std::size_t totalBytesRead;
+};
+
 
 
 #endif //EVENT_MANAGER_CONTROLTHREAD_HPP

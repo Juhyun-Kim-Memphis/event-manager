@@ -9,7 +9,7 @@ include_directories($ENV{BOOST_INC_PATH})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Lock.hpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp tests/event.cpp tests/pipe.cpp tests/lock.cpp tests/worker.cpp Worker.cpp tests/test_utils.hpp tests/task.cpp Message.hpp Message.cpp tests/ControlThreadTest.cpp ControlThread.cpp ControlThread.hpp)
+set(SOURCE_FILES Task.cpp Task.hpp tests/basic.cpp tests/test_main.cpp Lock.hpp Pipe.hpp Worker.hpp Event.hpp Lock.cpp tests/event.cpp tests/pipe.cpp tests/lock.cpp tests/worker.cpp Worker.cpp tests/test_utils.hpp tests/task.cpp Message.hpp Message.cpp tests/ControlThreadTest.cpp ControlThread.cpp ControlThread.hpp ConnectAcceptor.hpp)
 
 link_directories($ENV{GTEST_LIB_PATH})
 link_directories($ENV{BOOST_LIB_PATH})
